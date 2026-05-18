@@ -1,6 +1,7 @@
 import logging
-from contextlib import asynccontextmanager
 import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,9 @@ log.addHandler(logging.StreamHandler())
 
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-allowed_origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+allowed_origins = [
+    origin.strip() for origin in raw_origins.split(",") if origin.strip()
+]
 
 
 @asynccontextmanager
@@ -57,7 +60,9 @@ def create_app() -> FastAPI:
             log.error(f"{request}: {exc_str}")
 
             content = {"status_code": 10422, "message": exc_str, "data": None}
-            return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return JSONResponse(
+                content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
 
         return app
     except Exception as e:
