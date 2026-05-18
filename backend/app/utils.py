@@ -1,7 +1,7 @@
 from app.models.game.cards import CardColor, CardLevel
 
 # Level, Color, PV, Black, Blue, Green, Red, White (Splendor base game)
-SPLENDOR_CARDS: list[tuple[int, CardColor, int, int, int, int, int, int]] = [
+SPLENDOR_CARDS: list[tuple[CardLevel, CardColor, int, int, int, int, int, int]] = [
     (CardLevel.ONE, CardColor.BLACK, 0, 0, 1, 1, 1, 1),
     (CardLevel.ONE, CardColor.BLACK, 0, 0, 2, 1, 1, 1),
     (CardLevel.ONE, CardColor.BLACK, 0, 0, 2, 0, 1, 2),
