@@ -2,7 +2,7 @@ import z from 'zod';
 
 import GemChip from '@/components/shared/game/gem-chip';
 
-import { cardDataSchema, getNonZeroGemCosts } from '@/types/game/cards';
+import { cardDataSchema, getNonZeroGemCosts } from '@/types/cards';
 
 import { cn } from '@/lib/utils';
 

@@ -31,9 +31,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <div className="flex min-h-screen flex-col items-center justify-items-center space-y-4 p-8">
-              <div className="relative w-full">
-                <Header />
-              </div>
+              <Header />
               {children}
             </div>
           </QueryProvider>

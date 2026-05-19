@@ -63,6 +63,16 @@
   --color-gem-red-fg: var(--gem-red-fg);
 
   --color-splendor-points: var(--splendor-points);
+  --color-splendor-gold: var(--splendor-gold);
+  --color-splendor-gold-muted: var(--splendor-gold-muted);
+  --color-splendor-velvet: var(--splendor-velvet);
+  --color-splendor-velvet-deep: var(--splendor-velvet-deep);
+
+  --font-display: var(--font-cinzel), ui-serif, Georgia, serif;
+
+  --animate-splendor-glow: splendor-glow 6s ease-in-out infinite;
+  --animate-gem-orbit: gem-orbit 18s linear infinite;
+  --animate-title-shine: title-shine 4s ease-in-out infinite;
 }
 
 :root {
@@ -120,6 +130,13 @@
   --gem-red-fg: oklch(0.99 0 0);
 
   --splendor-points: oklch(0.68 0.17 75);
+  --splendor-gold: oklch(0.55 0.17 75);
+  --splendor-gold-muted: oklch(0.44 0.12 75);
+  --splendor-velvet: oklch(0.97 0.018 75);
+  --splendor-velvet-deep: oklch(0.9 0.03 75);
+  --splendor-orb-blue: oklch(0.48 0.2 264 / 22%);
+  --splendor-orb-green: oklch(0.48 0.15 155 / 20%);
+  --splendor-orb-red: oklch(0.48 0.22 25 / 20%);
 }
 
 .dark {
@@ -156,6 +173,13 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --splendor-points: oklch(0.78 0.14 75);
+  --splendor-gold: oklch(0.78 0.15 78);
+  --splendor-gold-muted: oklch(0.62 0.1 78);
+  --splendor-velvet: oklch(0.18 0.04 15);
+  --splendor-velvet-deep: oklch(0.12 0.035 12);
+  --splendor-orb-blue: oklch(0.55 0.2 264 / 22%);
+  --splendor-orb-green: oklch(0.55 0.15 155 / 18%);
+  --splendor-orb-red: oklch(0.55 0.22 25 / 16%);
 }
 
 @layer base {
@@ -280,5 +304,300 @@
     background-color: var(--gem-red);
     color: var(--gem-red-fg);
     --tw-ring-color: var(--gem-red-ring);
+  }
+
+  .splendor-hero {
+    @apply relative isolate w-full max-w-2xl;
+  }
+
+  .splendor-hero__frame {
+    @apply relative overflow-hidden rounded-[1.75rem] p-[1px];
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklch, var(--splendor-gold) 70%, white) 0%,
+      color-mix(in oklch, var(--splendor-gold) 35%, transparent) 35%,
+      color-mix(in oklch, var(--gem-blue) 40%, transparent) 55%,
+      color-mix(in oklch, var(--splendor-gold) 55%, transparent) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--splendor-gold) 25%, transparent),
+      0 24px 80px -20px color-mix(in oklch, var(--splendor-velvet-deep) 90%, black),
+      0 0 60px -10px color-mix(in oklch, var(--splendor-gold) 35%, transparent);
+  }
+
+  .splendor-hero__panel {
+    @apply relative overflow-hidden rounded-[1.7rem] px-8 py-10 sm:px-12 sm:py-12;
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        color-mix(in oklch, var(--splendor-gold) 18%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(ellipse 60% 40% at 100% 100%, var(--splendor-orb-red), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 0% 80%, var(--splendor-orb-blue), transparent 50%),
+      radial-gradient(ellipse 45% 30% at 80% 20%, var(--splendor-orb-green), transparent 45%),
+      linear-gradient(
+        168deg,
+        color-mix(in oklch, var(--splendor-velvet) 98%, white) 0%,
+        var(--splendor-velvet-deep) 55%,
+        color-mix(in oklch, var(--splendor-velvet-deep) 92%, black) 100%
+      );
+  }
+
+  .dark .splendor-hero__panel {
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        color-mix(in oklch, var(--splendor-gold) 22%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(ellipse 60% 40% at 100% 100%, var(--splendor-orb-red), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 0% 80%, var(--splendor-orb-blue), transparent 50%),
+      radial-gradient(ellipse 45% 30% at 80% 20%, var(--splendor-orb-green), transparent 45%),
+      linear-gradient(
+        168deg,
+        color-mix(in oklch, var(--splendor-velvet) 95%, white) 0%,
+        var(--splendor-velvet-deep) 50%,
+        color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
+      );
+  }
+
+  .splendor-hero__filigree {
+    @apply pointer-events-none absolute inset-x-8 top-0 h-px sm:inset-x-12;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--splendor-gold) 60%, transparent) 20%,
+      color-mix(in oklch, var(--splendor-gold) 90%, white) 50%,
+      color-mix(in oklch, var(--splendor-gold) 60%, transparent) 80%,
+      transparent
+    );
+  }
+
+  .splendor-hero__corner {
+    @apply pointer-events-none absolute size-16 opacity-40;
+    border-color: color-mix(in oklch, var(--splendor-gold) 45%, transparent);
+  }
+
+  .splendor-hero__corner--tl {
+    @apply top-4 left-4 rounded-tl-2xl border-t-2 border-l-2;
+  }
+
+  .splendor-hero__corner--tr {
+    @apply top-4 right-4 rounded-tr-2xl border-t-2 border-r-2;
+  }
+
+  .splendor-hero__corner--bl {
+    @apply bottom-4 left-4 rounded-bl-2xl border-b-2 border-l-2;
+  }
+
+  .splendor-hero__corner--br {
+    @apply right-4 bottom-4 rounded-br-2xl border-r-2 border-b-2;
+  }
+
+  .splendor-title {
+    font-family: var(--font-display);
+    @apply from-splendor-gold to-splendor-gold-muted bg-gradient-to-b via-amber-200 bg-clip-text text-5xl font-bold tracking-[0.12em] text-transparent uppercase sm:text-6xl;
+    text-shadow: 0 0 40px color-mix(in oklch, var(--splendor-gold) 30%, transparent);
+  }
+
+  .splendor-eyebrow {
+    @apply text-splendor-gold-muted text-[0.65rem] font-medium tracking-[0.35em] uppercase;
+    font-family: var(--font-display);
+  }
+
+  .splendor-divider {
+    @apply mx-auto h-px w-32;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--splendor-gold) 70%, transparent),
+      transparent
+    );
+  }
+
+  .splendor-gem-crown .gem-chip {
+    @apply size-7 text-xs shadow-lg;
+  }
+
+  .splendor-action-panel {
+    @apply rounded-2xl border p-4 shadow-inner backdrop-blur-sm;
+    border-color: color-mix(in oklch, var(--splendor-gold) 25%, var(--border));
+    background: color-mix(in oklch, var(--splendor-velvet-deep) 75%, transparent);
+  }
+
+  .splendor-subtitle {
+    @apply text-sm leading-relaxed sm:text-base;
+    color: color-mix(in oklch, var(--foreground) 72%, var(--splendor-gold-muted));
+  }
+
+  :root:not(.dark) .splendor-hero__frame {
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklch, var(--splendor-gold) 95%, black) 0%,
+      color-mix(in oklch, var(--splendor-gold) 65%, transparent) 35%,
+      color-mix(in oklch, var(--gem-blue) 55%, transparent) 55%,
+      color-mix(in oklch, var(--splendor-gold) 80%, black) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--splendor-gold) 45%, transparent),
+      0 20px 60px -16px color-mix(in oklch, var(--splendor-gold-muted) 50%, black),
+      0 0 48px -8px color-mix(in oklch, var(--splendor-gold) 50%, transparent);
+  }
+
+  :root:not(.dark) .splendor-hero__panel {
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        color-mix(in oklch, var(--splendor-gold) 28%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(ellipse 60% 40% at 100% 100%, var(--splendor-orb-red), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 0% 80%, var(--splendor-orb-blue), transparent 50%),
+      radial-gradient(ellipse 45% 30% at 80% 20%, var(--splendor-orb-green), transparent 45%),
+      linear-gradient(
+        168deg,
+        color-mix(in oklch, var(--splendor-velvet) 96%, white) 0%,
+        var(--splendor-velvet-deep) 50%,
+        color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
+      );
+  }
+
+  :root:not(.dark) .splendor-hero__filigree {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--splendor-gold) 80%, transparent) 20%,
+      color-mix(in oklch, var(--splendor-gold) 95%, black) 50%,
+      color-mix(in oklch, var(--splendor-gold) 80%, transparent) 80%,
+      transparent
+    );
+  }
+
+  :root:not(.dark) .splendor-hero__corner {
+    opacity: 0.72;
+    border-color: color-mix(in oklch, var(--splendor-gold) 70%, black);
+  }
+
+  :root:not(.dark) .splendor-title {
+    background-image: linear-gradient(
+      to bottom,
+      oklch(0.48 0.17 75),
+      oklch(0.55 0.16 78),
+      oklch(0.4 0.13 75)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+  }
+
+  .splendor-hero__halo {
+    background: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--splendor-gold) 35%, transparent),
+      transparent 70%
+    );
+  }
+
+  :root:not(.dark) .splendor-hero__halo {
+    opacity: 0.75;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--splendor-gold) 50%, transparent),
+      transparent 70%
+    );
+  }
+
+  :root:not(.dark) .splendor-eyebrow {
+    color: var(--splendor-gold-muted);
+  }
+
+  :root:not(.dark) .splendor-divider {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--splendor-gold) 90%, black),
+      transparent
+    );
+  }
+
+  :root:not(.dark) .splendor-subtitle {
+    color: oklch(0.38 0.04 75);
+  }
+
+  :root:not(.dark) .splendor-gem-crown .gem-chip {
+    @apply shadow-md ring-offset-2;
+    --tw-ring-offset-color: var(--splendor-velvet-deep);
+  }
+
+  :root:not(.dark) .splendor-gem-crown .gem-chip[data-gem='white'] {
+    box-shadow:
+      0 0 0 2px var(--gem-white-ring),
+      0 2px 8px oklch(0 0 0 / 18%);
+  }
+
+  :root:not(.dark) .splendor-action-panel {
+    border-color: color-mix(in oklch, var(--splendor-gold) 45%, var(--border));
+    background: color-mix(in oklch, var(--splendor-velvet-deep) 92%, white);
+    box-shadow: inset 0 1px 0 color-mix(in oklch, white 60%, transparent);
+  }
+
+  :root:not(.dark) .splendor-action-panel [data-slot='input'] {
+    border-color: color-mix(in oklch, var(--splendor-gold) 45%, var(--border));
+    background: color-mix(in oklch, white 85%, var(--splendor-velvet-deep));
+    color: var(--foreground);
+  }
+
+  :root:not(.dark) .splendor-action-panel [data-slot='input']::placeholder {
+    color: color-mix(in oklch, var(--splendor-gold-muted) 70%, var(--muted-foreground));
+  }
+
+  :root:not(.dark) .splendor-action-panel [data-slot='button'] {
+    border-color: color-mix(in oklch, var(--splendor-gold) 55%, transparent);
+    color: color-mix(in oklch, var(--splendor-gold) 85%, black);
+  }
+
+  :root:not(.dark) .splendor-action-panel [data-slot='button']:hover {
+    border-color: var(--splendor-gold);
+    background: color-mix(in oklch, var(--splendor-gold) 14%, white);
+    color: color-mix(in oklch, var(--splendor-gold) 90%, black);
+  }
+
+  :root:not(.dark) .splendor-hero .splendor-cta {
+    border-color: color-mix(in oklch, var(--splendor-gold) 65%, black);
+    box-shadow:
+      0 4px 20px -4px color-mix(in oklch, var(--splendor-gold) 70%, black),
+      inset 0 1px 0 color-mix(in oklch, white 35%, transparent);
+  }
+}
+
+@keyframes splendor-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes gem-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes title-shine {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
   }
 }

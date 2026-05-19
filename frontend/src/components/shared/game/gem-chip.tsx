@@ -1,4 +1,4 @@
-import { CardColor } from '@/types/game/cards';
+import { CardColor } from '@/types/cards';
 
 import { cn } from '@/lib/utils';
 
