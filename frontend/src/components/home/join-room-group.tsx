@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { useState } from 'react';
 
 import { joinRoom } from '@/actions/room/join';
@@ -14,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { getCurrentUserId } from '@/lib/supabase';
 
 export default function JoinRoomGroup() {
+  const router = useRouter();
   const [gameId, setGameId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,8 +24,9 @@ export default function JoinRoomGroup() {
   const handleJoinRoom = async () => {
     setIsLoading(true);
     try {
-      await joinRoom(gameId, await getCurrentUserId());
       setGameIdAtom(gameId);
+      await joinRoom(gameId, await getCurrentUserId());
+      router.push(`/lobby/${gameId}`);
     } catch (error) {
       toast.error('Unexpected error while trying to join room. Please try again later.');
       console.error(error);
