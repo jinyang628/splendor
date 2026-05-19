@@ -45,7 +45,10 @@ class RoomsController:
             except Exception as e:
                 log.exception("Error creating room for game %s: %s", input.game_id, e)
                 return JSONResponse(
-                    content={"message": "Error creating room"},
+                    content={
+                        "message": "Error creating room",
+                        "game_id": input.game_id,
+                    },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,
                 )
 
@@ -56,18 +59,23 @@ class RoomsController:
         async def join(input: JoinRoomRequest) -> JoinRoomResponse:
             try:
                 log.info("Joining room for game %s", input.game_id)
-                response = await self.service.join_room(
+                await self.service.join_room(
                     game_id=input.game_id,
                     player_id=input.player_id,
                 )
                 log.info("Room joined successfully for game %s", input.game_id)
-                return response
+                return JSONResponse(
+                    content={
+                        "message": "Room joined successfully",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.OK,
+                )
             except HTTPException as e:
                 log.exception(e.detail)
-                return JoinRoomResponse(
+                return JSONResponse(
+                    content={"message": "Room not found", "game_id": input.game_id},
                     status_code=httpx.codes.NOT_FOUND,
-                    message=e.detail,
-                    is_player_one=False,
                 )
             except Exception as e:
                 log.exception(
@@ -75,10 +83,12 @@ class RoomsController:
                     input.game_id,
                     e,
                 )
-                return JoinRoomResponse(
+                return JSONResponse(
+                    content={
+                        "message": "Unexpected error occurred while trying to join room",
+                        "game_id": input.game_id,
+                    },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-                    message="Unexpected error occurred while trying to join room. Please try again later.",
-                    is_player_one=False,
                 )
 
         @router.get(

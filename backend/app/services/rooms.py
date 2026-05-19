@@ -2,7 +2,6 @@ import httpx
 
 from app.models.base import Player
 from app.models.rooms.get_player_number import GetPlayerNumberResponse
-from app.models.rooms.join import JoinRoomResponse
 from app.services.database import DatabaseService
 from app.utils.errors import (RoomMissingHostPlayerError, RoomNotFoundError,
                               UserNotInRoomError)
@@ -14,17 +13,14 @@ class RoomsService:
         await client.table("games").insert(
             {
                 "id": game_id,
-                "player_id": [player_id],
+                "player_ids": [player_id],
             }
         ).execute()
 
-    async def join_room(self, game_id: str, player_id: str) -> JoinRoomResponse:
+    async def join_room(self, game_id: str, player_id: str) -> None:
         client = await DatabaseService().get_client()
         response = (
-            await client.table("rooms")
-            .select("player_one_id", "player_two_id")
-            .eq("game_id", game_id)
-            .execute()
+            await client.table("games").select("player_ids").eq("id", game_id).execute()
         )
         if (
             not response.data
@@ -36,32 +32,16 @@ class RoomsService:
             )
 
         player_info = response.data[0]
-        player_one_id = (
-            player_info.get("player_one_id") if isinstance(player_info, dict) else None
+        print(player_info)
+        player_ids: list = (
+            player_info.get("player_ids") if isinstance(player_info, dict) else None
         )
-        player_two_id = (
-            player_info.get("player_two_id") if isinstance(player_info, dict) else None
-        )
-        if not player_one_id and not player_two_id:
+        if not player_ids:
             raise Exception("Room is missing host player")
-
-        if player_one_id:
-            await client.table("rooms").update(
-                {"player_two_id": player_id, "status": "planning"}
-            ).eq("game_id", game_id).execute()
-            return JoinRoomResponse(
-                status_code=httpx.codes.OK,
-                message="Room joined successfully",
-                is_player_one=None,
-            )
-        await client.table("rooms").update(
-            {"player_one_id": player_id, "status": "planning"}
-        ).eq("game_id", game_id).execute()
-        return JoinRoomResponse(
-            status_code=httpx.codes.OK,
-            message="Room joined successfully",
-            is_player_one=None,
-        )
+        player_ids.append(player_id)
+        await client.table("games").update({"player_ids": player_ids}).eq(
+            "id", game_id
+        ).execute()
 
     async def get_player_number(
         self, game_id: str, player_id: str
