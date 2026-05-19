@@ -32,9 +32,7 @@ class RoomsController:
                     input.player_id,
                 )
                 await self.service.create_room(
-                    game_id=input.game_id,
-                    player_one_id=input.player_one_id,
-                    player_two_id=input.player_two_id,
+                    game_id=input.game_id, player_id=input.player_id
                 )
                 log.info("Room created successfully for game %s", input.game_id)
                 return JSONResponse(

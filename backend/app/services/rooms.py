@@ -9,15 +9,12 @@ from app.utils.errors import (RoomMissingHostPlayerError, RoomNotFoundError,
 
 
 class RoomsService:
-    async def create_room(
-        self, game_id: str, player_one_id: str | None, player_two_id: str | None
-    ) -> None:
+    async def create_room(self, game_id: str, player_id: str | None) -> None:
         client = await DatabaseService().get_client()
-        await client.table("rooms").insert(
+        await client.table("games").insert(
             {
-                "game_id": game_id,
-                "player_one_id": player_one_id,
-                "player_two_id": player_two_id,
+                "id": game_id,
+                "player_id": [player_id],
             }
         ).execute()
 
