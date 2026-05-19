@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
-import { Inter } from 'next/font/google';
+import { Cinzel, Inter } from 'next/font/google';
 
 import { QueryProvider } from '@/components/providers/query';
 import Header from '@/components/shared/header';
@@ -9,6 +9,11 @@ import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-cinzel',
+});
 
 export const metadata: Metadata = {
   title: 'Splendor',
@@ -22,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${cinzel.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

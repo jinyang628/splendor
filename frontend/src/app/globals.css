@@ -310,6 +310,14 @@
     @apply relative isolate w-full max-w-2xl;
   }
 
+  .splendor-hero--wide {
+    @apply max-w-3xl;
+  }
+
+  .splendor-hero__panel--spacious {
+    @apply px-10 py-14 sm:px-14 sm:py-16;
+  }
+
   .splendor-hero__frame {
     @apply relative overflow-hidden rounded-[1.75rem] p-[1px];
     background: linear-gradient(
@@ -414,6 +422,43 @@
       color-mix(in oklch, var(--splendor-gold) 70%, transparent),
       transparent
     );
+  }
+
+  .splendor-divider--lg {
+    @apply w-48 sm:w-56;
+  }
+
+  .splendor-lede {
+    font-family: var(--font-display);
+    @apply from-splendor-gold to-splendor-gold-muted bg-gradient-to-r via-amber-200 bg-clip-text text-2xl font-semibold tracking-tight text-transparent sm:text-3xl;
+  }
+
+  .splendor-room-code {
+    @apply animate-title-shine max-w-full cursor-pointer rounded-md border-0 bg-transparent px-2 py-2 text-center font-mono text-5xl leading-none font-semibold tracking-[0.18em] transition-opacity outline-none select-all hover:opacity-85 sm:text-6xl md:text-7xl;
+    font-feature-settings: 'tnum' 1;
+    background-image: linear-gradient(
+      to bottom,
+      var(--splendor-gold),
+      color-mix(in oklch, var(--splendor-gold) 75%, white),
+      var(--splendor-gold-muted)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .splendor-room-code:focus-visible {
+    @apply ring-offset-background ring-2 ring-offset-2;
+    --tw-ring-color: color-mix(in oklch, var(--splendor-gold) 55%, transparent);
+  }
+
+  .splendor-status {
+    @apply text-sm transition-opacity duration-500 ease-in-out;
+    color: color-mix(in oklch, var(--muted-foreground) 88%, var(--splendor-gold-muted));
+  }
+
+  .dark .splendor-status {
+    color: color-mix(in oklch, var(--muted-foreground) 75%, var(--splendor-gold));
   }
 
   .splendor-gem-crown .gem-chip {
@@ -523,6 +568,30 @@
 
   :root:not(.dark) .splendor-subtitle {
     color: oklch(0.38 0.04 75);
+  }
+
+  :root:not(.dark) .splendor-lede {
+    background-image: linear-gradient(
+      to right,
+      oklch(0.42 0.15 75),
+      oklch(0.5 0.14 78),
+      oklch(0.38 0.12 75)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  :root:not(.dark) .splendor-room-code {
+    background-image: linear-gradient(
+      to bottom,
+      oklch(0.44 0.16 75),
+      oklch(0.52 0.15 78),
+      oklch(0.36 0.13 75)
+    );
+  }
+
+  :root:not(.dark) .splendor-status {
+    color: oklch(0.4 0.05 75);
   }
 
   :root:not(.dark) .splendor-gem-crown .gem-chip {
