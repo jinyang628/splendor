@@ -4,9 +4,9 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 
-from app.models.api.rooms.create import CreateRoomRequest
-from app.models.api.rooms.get_player_number import GetPlayerNumberResponse
-from app.models.api.rooms.join import JoinRoomRequest, JoinRoomResponse
+from app.models.rooms.create import CreateRoomRequest
+from app.models.rooms.get_player_number import GetPlayerNumberResponse
+from app.models.rooms.join import JoinRoomRequest, JoinRoomResponse
 from app.services.rooms import RoomsService
 
 log = logging.getLogger(__name__)

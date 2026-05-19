@@ -39,7 +39,11 @@ poetry run uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-fi
 
 ```bash
 poetry env info 
-### Copy the value for Virtualenv Executable ###
-### Open the command palette and click the Python: Select Interpreter command ###
-### Paste the value and press enter. If VSCode prompts you to "Creates a `.venv` virtual environment in the current directory", exit the menu and restart VSCode/your computer. Repeat the steps above until ur library gets recognised. ###
+# Copy the value for Virtualenv Executable
+# Open the command palette and click the Python: Select Interpreter command
+# Paste the value and press enter. If VSCode prompts you to "Creates a `.venv` virtual environment in the current directory", exit the menu and restart VSCode/your computer. Repeat the steps above until ur library gets recognised.
+```
 
+## Implementation notes
+
+1. Enable supabase anonymous login (Authentication → Providers → Anonymous Sign-Ins)

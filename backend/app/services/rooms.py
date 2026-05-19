@@ -1,8 +1,8 @@
 import httpx
 
-from app.models.api.rooms.get_player_number import GetPlayerNumberResponse
-from app.models.api.rooms.join import JoinRoomResponse
 from app.models.base import Player
+from app.models.rooms.get_player_number import GetPlayerNumberResponse
+from app.models.rooms.join import JoinRoomResponse
 from app.services.database import DatabaseService
 from app.utils.errors import (RoomMissingHostPlayerError, RoomNotFoundError,
                               UserNotInRoomError)
