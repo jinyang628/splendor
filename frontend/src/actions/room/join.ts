@@ -3,9 +3,9 @@
 import axios from 'axios';
 import { StatusCodes } from 'http-status-codes';
 
-import { roomRequestSchema } from '@/types/room';
+import { RoomResponse, roomRequestSchema } from '@/types/room';
 
-export async function joinRoom(gameId: string, playerId: string): Promise<void> {
+export async function joinRoom(gameId: string, playerId: string): Promise<RoomResponse> {
   try {
     const request = roomRequestSchema.parse({
       game_id: gameId,
@@ -13,10 +13,13 @@ export async function joinRoom(gameId: string, playerId: string): Promise<void> 
     });
     console.log('Joining room:', request);
 
-    const response = await axios.post(`${process.env.SERVER_BASE_URL}/api/v1/rooms/join`, request);
+    const response = await axios.post<RoomResponse>(
+      `${process.env.SERVER_BASE_URL}/api/v1/rooms/join`,
+      request,
+    );
     if (response.status === StatusCodes.OK) {
       console.log('Room joined successfully');
-      return;
+      return response.data;
     } else {
       throw new Error('Failed to join room', { cause: response.data });
     }

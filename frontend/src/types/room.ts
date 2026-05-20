@@ -20,6 +20,13 @@ export const roomRequestSchema = z.object({
 
 export type RoomRequest = z.infer<typeof roomRequestSchema>;
 
+export const roomResponseSchema = z.object({
+  message: z.string(),
+  status: z.number(),
+});
+
+export type RoomResponse = z.infer<typeof roomResponseSchema>;
+
 export const roomStatusEnum = z.enum(['waiting', 'planning', 'active', 'finished']);
 
 export type RoomStatus = z.infer<typeof roomStatusEnum>;

@@ -9,7 +9,6 @@ from app.services.games import GamesService
 from app.services.rooms import RoomsService
 from app.services.users import UsersService
 
-
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1")
@@ -52,6 +51,7 @@ router.include_router(
 )
 
 ### Users
+
 
 def get_users_controller_router():
     service = UsersService()

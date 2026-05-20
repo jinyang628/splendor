@@ -4,9 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 
-from app.models.rooms.create import CreateRoomRequest
-from app.models.rooms.get_player_number import GetPlayerNumberResponse
-from app.models.rooms.join import JoinRoomRequest, JoinRoomResponse
+from app.models.rooms import RoomRequest
 from app.services.rooms import RoomsService
 
 log = logging.getLogger(__name__)
@@ -24,7 +22,7 @@ class RoomsController:
         @router.post(
             "/create",
         )
-        async def create_room(input: CreateRoomRequest) -> JSONResponse:
+        async def create_room(input: RoomRequest) -> JSONResponse:
             try:
                 log.info(
                     "Creating room for game: %s, player one id: %s, player two id: %s",
@@ -55,7 +53,7 @@ class RoomsController:
         @router.post(
             "/join",
         )
-        async def join_room(input: JoinRoomRequest) -> JSONResponse:
+        async def join_room(input: RoomRequest) -> JSONResponse:
             try:
                 log.info("Joining room for game %s", input.game_id)
                 await self.service.join_room(
@@ -97,31 +95,26 @@ class RoomsController:
         # async def get_player_number(
         #     game_id: str, user_id: str
         # ) -> GetPlayerNumberResponse:
-            try:
-                log.info("Getting player number for game %s", game_id)
-                response = await self.service.get_player_number(
-                    game_id=game_id, player_id=player_id
-                )
-                log.info("Player number got successfully for game %s", game_id)
-                return response
-            except HTTPException as e:
-                log.exception(e.detail)
-                return GetPlayerNumberResponse(
-                    status_code=e.status_code,
-                    is_player_one=None,
-                )
-            except Exception as e:
-                log.exception(
-                    "Unexpected error occurred while trying to get player number for game %s: %s",
-                    game_id,
-                    e,
-                )
-                return GetPlayerNumberResponse(
-                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-                    is_player_one=None,
-                )
-
-        @router.patch(
-            "/nickname",
-        )
-        async def edit_nickname
+        # try:
+        #     log.info("Getting player number for game %s", game_id)
+        #     response = await self.service.get_player_number(
+        #         game_id=game_id, player_id=player_id
+        #     )
+        #     log.info("Player number got successfully for game %s", game_id)
+        #     return response
+        # except HTTPException as e:
+        #     log.exception(e.detail)
+        #     return GetPlayerNumberResponse(
+        #         status_code=e.status_code,
+        #         is_player_one=None,
+        #     )
+        # except Exception as e:
+        #     log.exception(
+        #         "Unexpected error occurred while trying to get player number for game %s: %s",
+        #         game_id,
+        #         e,
+        #     )
+        #     return GetPlayerNumberResponse(
+        #         status_code=httpx.codes.INTERNAL_SERVER_ERROR,
+        #         is_player_one=None,
+        #     )

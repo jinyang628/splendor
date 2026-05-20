@@ -5,12 +5,11 @@ import { StatusCodes } from 'http-status-codes';
 
 import { editNicknameRequestSchema } from '@/types/room';
 
-export async function editNickname(gameId: string, playerId: string, nickname: string): Promise<void> {
+export async function editNickname(playerId: string, nickname: string): Promise<void> {
   try {
     const request = editNicknameRequestSchema.parse({
-      game_id: gameId,
       player_id: playerId,
-      nickname: nickname
+      nickname: nickname,
     });
     console.log('Editing nickname:', request);
 

@@ -12,6 +12,5 @@ class RoomResponse(BaseModel):
 
 
 class EditNicknameRequest(BaseModel):
-    game_id: str
     player_id: str
     nickname: str
