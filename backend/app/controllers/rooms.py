@@ -24,7 +24,7 @@ class RoomsController:
         @router.post(
             "/create",
         )
-        async def create(input: CreateRoomRequest) -> JSONResponse:
+        async def create_room(input: CreateRoomRequest) -> JSONResponse:
             try:
                 log.info(
                     "Creating room for game: %s, player one id: %s, player two id: %s",
@@ -54,9 +54,8 @@ class RoomsController:
 
         @router.post(
             "/join",
-            response_model=JoinRoomResponse,
         )
-        async def join(input: JoinRoomRequest) -> JoinRoomResponse:
+        async def join_room(input: JoinRoomRequest) -> JSONResponse:
             try:
                 log.info("Joining room for game %s", input.game_id)
                 await self.service.join_room(
@@ -91,13 +90,13 @@ class RoomsController:
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,
                 )
 
-        @router.get(
-            "/player-number",
-            response_model=GetPlayerNumberResponse,
-        )
-        async def get_player_number(
-            game_id: str, user_id: str
-        ) -> GetPlayerNumberResponse:
+        # @router.get(
+        #     "/player-number",
+        #     response_model=GetPlayerNumberResponse,
+        # )
+        # async def get_player_number(
+        #     game_id: str, user_id: str
+        # ) -> GetPlayerNumberResponse:
             try:
                 log.info("Getting player number for game %s", game_id)
                 response = await self.service.get_player_number(
@@ -121,3 +120,8 @@ class RoomsController:
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,
                     is_player_one=None,
                 )
+
+        @router.patch(
+            "/nickname",
+        )
+        async def edit_nickname

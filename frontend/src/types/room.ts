@@ -23,3 +23,11 @@ export type RoomRequest = z.infer<typeof roomRequestSchema>;
 export const roomStatusEnum = z.enum(['waiting', 'planning', 'active', 'finished']);
 
 export type RoomStatus = z.infer<typeof roomStatusEnum>;
+
+export const editNicknameRequestSchema = z.object({
+  game_id: z.string(),
+  user_id: z.string(),
+  nickname: z.string(),
+});
+
+export type EditNicknameRequest = z.infer<typeof editNicknameRequestSchema>;

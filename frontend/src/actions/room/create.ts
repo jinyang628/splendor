@@ -5,11 +5,11 @@ import { StatusCodes } from 'http-status-codes';
 
 import { roomRequestSchema } from '@/types/room';
 
-export async function createRoom(gameId: string, userId: string): Promise<void> {
+export async function createRoom(gameId: string, playerId: string): Promise<void> {
   try {
     const request = roomRequestSchema.parse({
       game_id: gameId,
-      player_id: userId,
+      player_id: playerId,
     });
     console.log('Creating room:', request);
 
