@@ -3,6 +3,7 @@ import httpx
 from app.services.database import DatabaseService
 from app.utils.errors import RoomNotFoundError
 from app.utils.rooms import generate_nicknames
+from backend.app.services.utils import instantiate_game_cards
 
 
 class GamesService:
@@ -34,6 +35,10 @@ class GamesService:
         await self._generate_random_nicknames(
             game_id=game_id, sorted_all_player_ids=sorted_all_player_ids
         )
+        closed_cards, open_cards = instantiate_game_cards()
+        await client.table("cards").insert(
+            {"closed": closed_cards, "open": open_cards}
+        ).execute()
         await client.table("games").update({"order": order, "is_ready": True}).eq(
             "id", game_id
         ).execute()

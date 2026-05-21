@@ -1,4 +1,4 @@
-from app.models.game.cards import CardColor, CardLevel
+from app.models.games.cards import CardColor, CardLevel
 
 # Level, Color, PV, Black, Blue, Green, Red, White (Splendor base game)
 SPLENDOR_CARDS: list[tuple[CardLevel, CardColor, int, int, int, int, int, int]] = [

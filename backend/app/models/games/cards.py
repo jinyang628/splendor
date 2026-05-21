@@ -1,4 +1,5 @@
 import enum
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,9 @@ class CardColor(enum.StrEnum):
 
 
 class Card(BaseModel):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, description="Unique card identifier."
+    )
     color: CardColor = Field(description="The bonus color provided by the card.")
     points: int = Field(description="The prestige points awarded by the card.")
     black: int = Field(description="Black gem cost to purchase the card.")
