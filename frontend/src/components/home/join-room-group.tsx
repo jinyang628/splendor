@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { joinRoom } from '@/actions/room/join';
-import { gameIdAtom } from '@/state/game';
+import { gameIdAtom, hostByGameIdAtom } from '@/state/game';
 import { useSetAtom } from 'jotai';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,10 +21,12 @@ export default function JoinRoomGroup() {
   const [isLoading, setIsLoading] = useState(false);
 
   const setGameIdAtom = useSetAtom(gameIdAtom);
+  const setHostByGameId = useSetAtom(hostByGameIdAtom);
   const handleJoinRoom = async () => {
     setIsLoading(true);
     try {
       setGameIdAtom(gameId);
+      setHostByGameId((prev) => ({ ...prev, [gameId]: false }));
       await joinRoom(gameId, await getCurrentUserId());
       router.push(`/lobby/${gameId}`);
     } catch (error) {

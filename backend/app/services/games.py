@@ -34,7 +34,7 @@ class GamesService:
         await self._generate_random_nicknames(
             game_id=game_id, sorted_all_player_ids=sorted_all_player_ids
         )
-        await client.table("games").update({"order": order}, {"is_ready": True}).eq(
+        await client.table("games").update({"order": order, "is_ready": True}).eq(
             "id", game_id
         ).execute()
 
@@ -45,7 +45,7 @@ class GamesService:
         nicknames: dict[str, str] = generate_nicknames(
             game_id=game_id, sorted_all_player_ids=sorted_all_player_ids
         )
-        await client.table("users").insert(
+        await client.table("users").upsert(
             [
                 {"id": player_id, "nickname": nickname}
                 for player_id, nickname in nicknames.items()

@@ -6,6 +6,7 @@ import { use, useEffect } from 'react';
 
 import { toast } from 'sonner';
 
+import StartGameButton from '@/components/lobby/start-game-button';
 import StatusText from '@/components/lobby/status-text';
 import GemChip from '@/components/shared/game/gem-chip';
 import SplendorHeroShell from '@/components/shared/splendor-hero-shell';
@@ -85,8 +86,9 @@ export default function LobbyPage({ params }: LobbyPageProps) {
 
           <div className="splendor-divider splendor-divider--lg" aria-hidden />
 
-          <div className="mx-auto max-w-xl">
+          <div className="mx-auto flex max-w-xl flex-col items-center gap-6">
             <StatusText />
+            <StartGameButton gameId={gameId} />
           </div>
         </div>
       </SplendorHeroShell>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { createRoom } from '@/actions/room/create';
-import { gameIdAtom } from '@/state/game';
+import { gameIdAtom, hostByGameIdAtom } from '@/state/game';
 import { useSetAtom } from 'jotai';
 import { Loader2 } from 'lucide-react';
 
@@ -17,6 +17,7 @@ import { getRandomGameId } from '@/lib/utils';
 export default function CreateRoomButton() {
   const router = useRouter();
   const setGameId = useSetAtom(gameIdAtom);
+  const setHostByGameId = useSetAtom(hostByGameIdAtom);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateRoom = async () => {
@@ -24,6 +25,7 @@ export default function CreateRoomButton() {
     try {
       const gameId: string = getRandomGameId();
       setGameId(gameId);
+      setHostByGameId((prev) => ({ ...prev, [gameId]: true }));
       await createRoom(gameId, await getCurrentUserId());
       router.push(`/lobby/${gameId}`);
     } finally {
