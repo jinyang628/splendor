@@ -25,7 +25,7 @@ DEFAULT_NICKNAMES = [
 
 def generate_nicknames(
     game_id: str,
-    all_player_ids: list[str],
+    sorted_all_player_ids: list[str],
 ) -> dict[str, str]:
     """
     Guarantees unique nicknames within a game
@@ -40,7 +40,6 @@ def generate_nicknames(
     nicknames = DEFAULT_NICKNAMES.copy()
     rng.shuffle(nicknames)
 
-    # Deterministic player ordering
-    sorted_players = sorted(all_player_ids)
-
-    return {player_id: nicknames[i] for i, player_id in enumerate(sorted_players)}
+    return {
+        player_id: nicknames[i] for i, player_id in enumerate(sorted_all_player_ids)
+    }

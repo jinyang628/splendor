@@ -1,13 +1,11 @@
 import logging
 
+import httpx
 from fastapi import APIRouter
+from starlette.responses import JSONResponse
 
+from app.models.base import InitializeRequest
 # from app.models.api.games.get_game_state import GetGameStateResponse
-# from app.models.api.games.initialize import (
-#     InitializeCaptureRequest,
-#     InitializeCaptureResponse,
-#     InitializeRequest,
-# )
 # from app.models.api.games.move_piece import MovePieceRequest, MovePieceResponse
 # from app.models.api.games.toggle_marking import ToggleMarkingRequest
 from app.services.games import GamesService
@@ -24,35 +22,28 @@ class GamesController:
     def setup_routes(self):
         router = self.router
 
-        # @router.post(
-        #     "/initialize",
-        # )
-        # async def initialize(input: InitializeRequest) -> JSONResponse:
-        #     try:
-        #         log.info(
-        #             "Initializing pieces for player %s in game %s",
-        #             input.pieces[0].player,
-        #             input.game_id,
-        #         )
-        #         await self.service.initialize(
-        #             game_id=input.game_id,
-        #             pieces=input.pieces,  # pyright: ignore[reportArgumentType]
-        #         )
-        #         return JSONResponse(
-        #             content={
-        #                 "message": "Pieces initialized successfully",
-        #                 "game_id": input.game_id,
-        #             },
-        #             status_code=httpx.codes.OK,
-        #         )
-        #     except Exception as e:
-        #         log.info(
-        #             "Error initializing pieces for %s in game %s: %s",
-        #             input.pieces[0].player,
-        #             input.game_id,
-        #             e,
-        #         )
-        #         return JSONResponse(
-        #             content={"message": "Error initializing pieces"},
-        #             status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-        #         )
+        @router.post(
+            "/initialize",
+        )
+        async def initialize(input: InitializeRequest) -> JSONResponse:
+            try:
+                log.info(f"Initializing game for {input.game_id}")
+                await self.service.initialize(
+                    game_id=input.game_id,
+                )
+                return JSONResponse(
+                    content={
+                        "message": "Game initialized successfully",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.OK,
+                )
+            except Exception as e:
+                log.exception("Error initializing game %s: %s", input.game_id, e)
+                return JSONResponse(
+                    content={
+                        "message": "Error initializing game",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
+                )
