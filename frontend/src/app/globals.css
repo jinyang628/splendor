@@ -638,6 +638,119 @@
       0 4px 20px -4px color-mix(in oklch, var(--splendor-gold) 70%, black),
       inset 0 1px 0 color-mix(in oklch, white 35%, transparent);
   }
+
+  .splendor-game-board {
+    @apply flex w-full flex-col gap-8;
+  }
+
+  .splendor-player-bar {
+    @apply flex flex-wrap items-stretch justify-center gap-3;
+  }
+
+  .splendor-player-seat {
+    @apply border-border/70 bg-card relative flex min-w-[7.5rem] flex-col items-center gap-1 rounded-xl border-2 px-4 py-3 shadow-md ring-1 ring-black/5;
+    background-image: linear-gradient(
+      165deg,
+      color-mix(in oklch, var(--card) 92%, white) 0%,
+      var(--card) 50%,
+      color-mix(in oklch, var(--card) 94%, black) 100%
+    );
+  }
+
+  .splendor-player-seat--you {
+    @apply border-splendor-gold/70 ring-splendor-gold/40 shadow-lg ring-2;
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--splendor-gold) 35%, transparent),
+      0 8px 24px -8px color-mix(in oklch, var(--splendor-gold) 45%, transparent);
+  }
+
+  .splendor-player-seat__order {
+    @apply bg-splendor-gold/15 text-splendor-gold ring-splendor-gold/25 inline-flex size-7 items-center justify-center rounded-full text-sm font-bold tabular-nums ring-1;
+    font-family: var(--font-display);
+  }
+
+  .splendor-player-seat__name {
+    @apply text-center text-sm font-semibold tracking-wide;
+    font-family: var(--font-display);
+  }
+
+  .splendor-player-seat__badge {
+    @apply bg-splendor-gold/20 text-splendor-gold rounded-full px-2 py-0.5 text-[0.6rem] font-semibold tracking-[0.2em] uppercase;
+    font-family: var(--font-display);
+  }
+
+  .splendor-card-board {
+    @apply flex flex-col gap-4;
+  }
+
+  .splendor-card-row {
+    @apply flex flex-wrap items-center justify-center gap-3 sm:gap-4;
+  }
+
+  .splendor-card-row__cell {
+    @apply flex shrink-0 items-center justify-center;
+  }
+
+  .splendor-card-slot {
+    @apply border-border/40 bg-muted/30 h-36 w-24 shrink-0 rounded-xl border-2 border-dashed;
+  }
+
+  .splendor-deck {
+    @apply border-border/70 relative flex h-36 w-24 shrink-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 p-0 shadow-md ring-1 ring-black/5;
+    background-image: linear-gradient(
+      145deg,
+      color-mix(in oklch, var(--splendor-velvet-deep) 90%, black) 0%,
+      color-mix(in oklch, var(--splendor-gold-muted) 55%, var(--card)) 50%,
+      color-mix(in oklch, var(--splendor-velvet-deep) 95%, black) 100%
+    );
+  }
+
+  .splendor-deck--empty {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .splendor-deck__pattern {
+    @apply pointer-events-none absolute inset-2 rounded-lg border border-white/10;
+    background: repeating-linear-gradient(
+      -45deg,
+      color-mix(in oklch, var(--splendor-gold) 18%, transparent),
+      color-mix(in oklch, var(--splendor-gold) 18%, transparent) 4px,
+      transparent 4px,
+      transparent 10px
+    );
+  }
+
+  .splendor-deck__level {
+    @apply text-splendor-gold relative z-10 text-3xl font-bold tabular-nums;
+    font-family: var(--font-display);
+  }
+
+  .splendor-deck__count {
+    @apply text-muted-foreground relative z-10 mt-1 text-xs font-medium tabular-nums;
+  }
+
+  .splendor-game-panel {
+    @apply w-full max-w-4xl rounded-[1.75rem] border p-6 shadow-xl sm:p-8;
+    border-color: color-mix(in oklch, var(--splendor-gold) 30%, var(--border));
+    background: linear-gradient(
+      168deg,
+      color-mix(in oklch, var(--splendor-velvet) 96%, white) 0%,
+      var(--splendor-velvet-deep) 55%,
+      color-mix(in oklch, var(--splendor-velvet-deep) 92%, black) 100%
+    );
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--splendor-gold) 20%, transparent),
+      0 24px 60px -24px color-mix(in oklch, var(--splendor-velvet-deep) 90%, black);
+  }
+
+  .dark .splendor-game-panel {
+    background: linear-gradient(
+      168deg,
+      color-mix(in oklch, var(--splendor-velvet) 95%, white) 0%,
+      var(--splendor-velvet-deep) 50%,
+      color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
+    );
+  }
 }
 
 @keyframes splendor-glow {
