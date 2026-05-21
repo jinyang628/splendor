@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const gemColorSchema = z.enum(['black', 'blue', 'white', 'green', 'red', 'gold']);
+export type GemColor = z.infer<typeof gemColorSchema>;
+export const GEM_COLORS = gemColorSchema.options;
+
 export const cardColorSchema = z.enum(['black', 'blue', 'white', 'green', 'red']);
 export type CardColor = z.infer<typeof cardColorSchema>;
 export const CARD_COLORS = cardColorSchema.options;
@@ -28,22 +32,25 @@ export const COST_GEM_ORDER = costGemOrderSchema.parse([
   'white',
 ] as const);
 
-export const gemCostSchema = z.object({
+export const gemCountsSchema = z.object({
   black: z.number().int().min(0),
   blue: z.number().int().min(0),
   green: z.number().int().min(0),
   red: z.number().int().min(0),
   white: z.number().int().min(0),
+  gold: z.number().int().min(0),
 });
 
-export const cardDataSchema = gemCostSchema.extend({
+export type GemCounts = z.infer<typeof gemCountsSchema>;
+
+export const cardDataSchema = gemCountsSchema.extend({
   color: cardColorSchema,
   pointValues: z.number().int().min(0),
 });
 
 export type CardData = z.infer<typeof cardDataSchema>;
 
-export function getNonZeroGemCosts(costs: z.infer<typeof gemCostSchema>) {
+export function getNonZeroGemCosts(costs: z.infer<typeof gemCountsSchema>) {
   return COST_GEM_ORDER.map((gem) => ({
     gem,
     count: costs[gem],

@@ -1,4 +1,4 @@
-import { CardColor } from '@/types/cards';
+import { GemColor } from '@/types/cards';
 
 import { cn } from '@/lib/utils';
 
@@ -7,7 +7,7 @@ export default function GemChip({
   count,
   prominent = false,
 }: {
-  color: CardColor;
+  color: GemColor;
   count?: number;
   prominent?: boolean;
 }) {
@@ -17,7 +17,7 @@ export default function GemChip({
       className={cn('gem-chip', prominent && 'gem-chip--prominent')}
       aria-hidden
     >
-      {count !== undefined && count > 0 ? count : null}
+      {count !== undefined ? count : null}
     </span>
   );
 }

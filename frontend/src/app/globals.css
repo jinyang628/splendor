@@ -62,6 +62,10 @@
   --color-gem-red-ring: var(--gem-red-ring);
   --color-gem-red-fg: var(--gem-red-fg);
 
+  --color-gem-gold: var(--gem-gold);
+  --color-gem-gold-ring: var(--gem-gold-ring);
+  --color-gem-gold-fg: var(--gem-gold-fg);
+
   --color-splendor-points: var(--splendor-points);
   --color-splendor-gold: var(--splendor-gold);
   --color-splendor-gold-muted: var(--splendor-gold-muted);
@@ -128,6 +132,10 @@
   --gem-red: oklch(0.55 0.22 25);
   --gem-red-ring: oklch(0.65 0.2 25);
   --gem-red-fg: oklch(0.99 0 0);
+
+  --gem-gold: oklch(0.73 0.16 82);
+  --gem-gold-ring: oklch(0.84 0.13 84);
+  --gem-gold-fg: oklch(0.2 0.04 75);
 
   --splendor-points: oklch(0.68 0.17 75);
   --splendor-gold: oklch(0.55 0.17 75);
@@ -304,6 +312,12 @@
     background-color: var(--gem-red);
     color: var(--gem-red-fg);
     --tw-ring-color: var(--gem-red-ring);
+  }
+
+  .gem-chip[data-gem='gold'] {
+    background-color: var(--gem-gold);
+    color: var(--gem-gold-fg);
+    --tw-ring-color: var(--gem-gold-ring);
   }
 
   .splendor-hero {
@@ -643,6 +657,18 @@
     @apply flex w-full flex-col gap-8;
   }
 
+  .splendor-gem-bank {
+    @apply flex flex-wrap items-center justify-center gap-3;
+  }
+
+  .splendor-gem-bank__button {
+    @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-1 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0;
+  }
+
+  .splendor-gem-bank .gem-chip {
+    @apply size-11 text-base;
+  }
+
   .splendor-player-bar {
     @apply flex flex-wrap items-stretch justify-center gap-3;
   }
@@ -677,6 +703,18 @@
   .splendor-player-seat__badge {
     @apply bg-splendor-gold/20 text-splendor-gold rounded-full px-2 py-0.5 text-[0.6rem] font-semibold tracking-[0.2em] uppercase;
     font-family: var(--font-display);
+  }
+
+  .splendor-player-seat__gems {
+    @apply mt-1 flex min-h-5 flex-wrap items-center justify-center gap-1.5;
+  }
+
+  .splendor-player-seat__gem {
+    @apply inline-flex;
+  }
+
+  .splendor-player-seat__gem .gem-chip {
+    @apply size-5 text-[10px];
   }
 
   .splendor-card-board {

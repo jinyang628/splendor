@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from app.models.cards import Card, CardLevel
+from app.models.games import Card, CardLevel, GemColor
 
 
 class Player(StrEnum):
@@ -19,5 +19,7 @@ class InitializeRequest(BaseModel):
 class FetchGameDataResponse(BaseModel):
     order: dict[str, int]
     nicknames: dict[str, str]
+    gems_available: dict[GemColor, int]
+    gems_owned: dict[str, dict[GemColor, int]]
     closed: dict[CardLevel, list[Card]]
     open: dict[CardLevel, list[Card]]

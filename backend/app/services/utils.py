@@ -2,7 +2,7 @@ import random
 import uuid
 from typing import Optional
 
-from app.models.cards import Card, CardLevel
+from app.models.games import Card, CardLevel
 from app.utils.errors import InvalidGameLogicError
 from app.utils.games import SPLENDOR_CARDS
 
