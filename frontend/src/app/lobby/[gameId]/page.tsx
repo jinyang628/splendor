@@ -44,7 +44,9 @@ export default function LobbyPage({ params }: LobbyPageProps) {
           }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription Status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

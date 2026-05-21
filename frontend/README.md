@@ -16,4 +16,6 @@ npm install
 npm run dev
 ```
 
-## Add [ShadCn](https://ui.shadcn.com/docs/components/accordion) components
+## Implementation notes
+
+Supabase realtime subscriptions require us to enaboel it for specific tables: Database -> Publications -> supabase_realtime -> (Enable it for desired tables)
