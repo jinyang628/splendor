@@ -16,10 +16,6 @@ class InitializeRequest(BaseModel):
     game_id: str
 
 
-class FetchGameDataRequest(BaseModel):
-    game_id: str
-
-
 class FetchGameDataResponse(BaseModel):
     order: dict[str, int]
     nicknames: dict[str, str]

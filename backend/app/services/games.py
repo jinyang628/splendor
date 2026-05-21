@@ -63,7 +63,7 @@ class GamesService:
         response = (
             await client.table("cards")
             .select("open", "closed")
-            .eq("id", game_id)
+            .eq("game_id", game_id)
             .execute()
         )
         if (
