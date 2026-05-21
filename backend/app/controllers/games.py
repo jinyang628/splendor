@@ -4,10 +4,8 @@ import httpx
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
-from app.models.base import InitializeRequest
-# from app.models.api.games.get_game_state import GetGameStateResponse
-# from app.models.api.games.move_piece import MovePieceRequest, MovePieceResponse
-# from app.models.api.games.toggle_marking import ToggleMarkingRequest
+from app.models.base import (FetchGameDataRequest, FetchGameDataResponse,
+                             InitializeRequest)
 from app.services.games import GamesService
 
 log = logging.getLogger(__name__)
@@ -43,6 +41,23 @@ class GamesController:
                 return JSONResponse(
                     content={
                         "message": "Error initializing game",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
+                )
+
+        @router.post("/fetch", response_model=FetchGameDataResponse)
+        async def fetch_game_data(
+            self, input: FetchGameDataRequest
+        ) -> FetchGameDataResponse:
+            try:
+                log.info(f"Fetching game data for {input.game_id}")
+                return await self.service.fetch_game_data(game_id=input.game_id)
+            except Exception as e:
+                log.exception("Error fetching game data %s: %s", input.game_id, e)
+                return JSONResponse(
+                    content={
+                        "message": "Error fetching game data",
                         "game_id": input.game_id,
                     },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,

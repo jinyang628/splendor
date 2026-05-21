@@ -2,7 +2,7 @@ import random
 import uuid
 from typing import Optional
 
-from app.models.games.cards import Card, CardLevel
+from app.models.cards import Card, CardLevel
 from app.utils.errors import InvalidGameLogicError
 from app.utils.games import SPLENDOR_CARDS
 
@@ -41,6 +41,15 @@ def instantiate_game_cards() -> (
         open_cards[level] = revealed_cards
 
     return closed_cards, open_cards
+
+
+def serialize_cards_by_level(
+    cards_by_level: dict[CardLevel, list[Card]],
+) -> dict[str, list[dict]]:
+    return {
+        str(level.value): [card.model_dump(mode="json") for card in cards]
+        for level, cards in cards_by_level.items()
+    }
 
 
 def reserve_closed_card(
