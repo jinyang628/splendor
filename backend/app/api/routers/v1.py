@@ -3,11 +3,11 @@ import logging
 from fastapi import APIRouter
 
 from app.controllers.games import GamesController
+from app.controllers.players import PlayersController
 from app.controllers.rooms import RoomsController
-from app.controllers.users import UsersController
 from app.services.games import GamesService
+from app.services.players import PlayersService
 from app.services.rooms import RoomsService
-from app.services.users import UsersService
 
 log = logging.getLogger(__name__)
 
@@ -50,16 +50,16 @@ router.include_router(
     prefix="/rooms",
 )
 
-### Users
+### Players
 
 
-def get_users_controller_router():
-    service = UsersService()
-    return UsersController(service=service).router
+def get_players_controller_router():
+    service = PlayersService()
+    return PlayersController(service=service).router
 
 
 router.include_router(
-    get_users_controller_router(),
-    tags=["users"],
-    prefix="/users",
+    get_players_controller_router(),
+    tags=["players"],
+    prefix="/players",
 )

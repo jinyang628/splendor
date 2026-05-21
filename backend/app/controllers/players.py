@@ -5,13 +5,13 @@ from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
 from app.models.rooms import EditNicknameRequest
-from app.services.users import UsersService
+from app.services.players import PlayersService
 
 log = logging.getLogger(__name__)
 
 
-class UsersController:
-    def __init__(self, service: UsersService):
+class PlayersController:
+    def __init__(self, service: PlayersService):
         self.router = APIRouter()
         self.service = service
         self.setup_routes()

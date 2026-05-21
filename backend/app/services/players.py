@@ -1,7 +1,7 @@
 from app.services.database import DatabaseService
 
 
-class UsersService:
+class PlayersService:
     async def edit_nickname(self, user_id: str, nickname: str) -> None:
         client = await DatabaseService().get_client()
         await client.table("users").update(

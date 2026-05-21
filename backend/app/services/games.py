@@ -12,7 +12,10 @@ class GamesService:
     async def fetch_game_data(self, game_id: str) -> FetchGameDataResponse:
         client = await DatabaseService().get_client()
         response = (
-            await client.table("games").select("order").eq("id", game_id).execute()
+            await client.table("players")
+            .select("id", "nickname", "order")
+            .eq("game_id", game_id)
+            .execute()
         )
         if (
             not response.data
@@ -20,46 +23,14 @@ class GamesService:
             or not response.data[0]
         ):
             raise RoomNotFoundError(
-                status_code=httpx.codes.NOT_FOUND, detail="Room not found"
+                status_code=httpx.codes.NOT_FOUND, detail="Players not found"
             )
-
-        order_info = response.data[0]
-        order: dict[str, int] = (
-            order_info.get("order") if isinstance(order_info, dict) else None
-        )
-        if not order:
-            raise InvalidDatabaseEntryError(
-                status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-                detail="Order information is missing from database",
-            )
+        order: dict[str, int] = {}
         nicknames: dict[str, str] = {}
-        for player_id in order:
-            response = (
-                await client.table("users")
-                .select("nickname")
-                .eq("id", player_id)
-                .execute()
-            )
-            if (
-                not response.data
-                or not isinstance(response.data, list)
-                or not response.data[0]
-            ):
-                raise InvalidDatabaseEntryError(
-                    status_code=httpx.codes.NOT_FOUND,
-                    detail="Player not found",
-                )
-            nickname_info = response.data[0]
-            nicknames[player_id] = (
-                nickname_info.get("nickname")
-                if isinstance(nickname_info, dict)
-                else None
-            )
-            if not nicknames[player_id]:
-                raise InvalidDatabaseEntryError(
-                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-                    detail="Nickname information is missing from database",
-                )
+        for player_info in response.data:
+            print(player_info)
+            order[player_info["id"]] = player_info["order"]
+            nicknames[player_info["id"]] = player_info["nickname"]
         response = (
             await client.table("cards")
             .select("open", "closed")
@@ -119,10 +90,7 @@ class GamesService:
             )
 
         sorted_all_player_ids: list[str] = sorted(player_ids)
-        order: dict[str, int] = {
-            player_id: i for i, player_id in enumerate(sorted_all_player_ids)
-        }
-        await self._generate_random_nicknames(
+        await self._generate_random_nicknames_by_order(
             game_id=game_id, sorted_all_player_ids=sorted_all_player_ids
         )
         closed_cards, open_cards = instantiate_game_cards()
@@ -133,20 +101,25 @@ class GamesService:
                 "open": serialize_cards_by_level(open_cards),
             }
         ).execute()
-        await client.table("games").update({"order": order, "is_ready": True}).eq(
+        await client.table("games").update({"is_ready": True}).eq(
             "id", game_id
         ).execute()
 
-    async def _generate_random_nicknames(
+    async def _generate_random_nicknames_by_order(
         self, game_id: str, sorted_all_player_ids: list[str]
     ) -> None:
         client = await DatabaseService().get_client()
         nicknames: dict[str, str] = generate_nicknames(
             game_id=game_id, sorted_all_player_ids=sorted_all_player_ids
         )
-        await client.table("users").upsert(
+        await client.table("players").upsert(
             [
-                {"id": player_id, "nickname": nickname}
-                for player_id, nickname in nicknames.items()
+                {
+                    "id": player_id,
+                    "game_id": game_id,
+                    "nickname": nicknames[player_id],
+                    "order": idx + 1,
+                }
+                for idx, player_id in enumerate(sorted_all_player_ids)
             ]
         ).execute()
