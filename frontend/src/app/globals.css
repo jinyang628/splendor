@@ -681,6 +681,10 @@
     @apply border-border/60 bg-card/80 flex flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
   }
 
+  .splendor-gem-selection--discard {
+    @apply border-destructive/45;
+  }
+
   .splendor-gem-selection__content {
     @apply flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center;
   }
@@ -695,7 +699,7 @@
   }
 
   .splendor-gem-selection__chip {
-    @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-0.5 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0;
+    @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-0.5 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0;
   }
 
   .splendor-gem-selection__chip .gem-chip {

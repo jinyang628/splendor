@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { discardGems } from '@/actions/games/discardGems';
 import { takeGems } from '@/actions/games/takeGems';
 import { toast } from 'sonner';
 
@@ -11,7 +12,13 @@ import PlayerBar from '@/components/game/player-bar';
 import GemChip from '@/components/shared/game/gem-chip';
 import { Button } from '@/components/ui/button';
 
-import { CARD_COLORS, type CardColor, type GemColor, type GemCounts } from '@/types/cards';
+import {
+  CARD_COLORS,
+  type CardColor,
+  GEM_COLORS,
+  type GemColor,
+  type GemCounts,
+} from '@/types/cards';
 import type { FetchGameDataResponse } from '@/types/games';
 
 import { BOARD_LEVELS, getPlayersInOrder } from '@/lib/games';
@@ -34,6 +41,11 @@ const EMPTY_GEM_COUNTS: GemCounts = {
 
 function getSelectedTotal(selectedGems: GemCounts) {
   return Object.values(selectedGems).reduce((total, count) => total + count, 0);
+}
+
+function getGemTotal(gems: GemCounts | undefined) {
+  if (!gems) return 0;
+  return Object.values(gems).reduce((total, count) => total + count, 0);
 }
 
 function isTakeableColor(color: GemColor): color is CardColor {
@@ -64,7 +76,13 @@ export default function GameBoard({
 }: GameBoardProps) {
   const players = getPlayersInOrder(gameData);
   const [selectedGems, setSelectedGems] = useState<GemCounts>(EMPTY_GEM_COUNTS);
+  const [selectedDiscards, setSelectedDiscards] = useState<GemCounts>(EMPTY_GEM_COUNTS);
   const [isTakingGems, setIsTakingGems] = useState(false);
+  const [isDiscardingGems, setIsDiscardingGems] = useState(false);
+  const currentPlayerGems = currentPlayerId ? gameData.gems_owned[currentPlayerId] : undefined;
+  const currentPlayerGemTotal = getGemTotal(currentPlayerGems);
+  const discardRequired = Math.max(0, currentPlayerGemTotal - 10);
+  const mustDiscard = discardRequired > 0;
 
   const selectedGemEntries = useMemo(
     () =>
@@ -75,9 +93,26 @@ export default function GameBoard({
     [selectedGems],
   );
   const selectedTotal = getSelectedTotal(selectedGems);
+  const selectedDiscardEntries = useMemo(
+    () =>
+      GEM_COLORS.map((color) => ({
+        color,
+        count: selectedDiscards[color],
+      })).filter(({ count }) => count > 0),
+    [selectedDiscards],
+  );
+  const selectedDiscardTotal = getSelectedTotal(selectedDiscards);
+
+  useEffect(() => {
+    if (!mustDiscard) {
+      setSelectedDiscards({ ...EMPTY_GEM_COUNTS });
+    } else {
+      setSelectedGems({ ...EMPTY_GEM_COUNTS });
+    }
+  }, [mustDiscard]);
 
   const handleGemClick = (color: GemColor) => {
-    if (!canAddGem(color, selectedGems, gameData.gems_available)) return;
+    if (mustDiscard || !canAddGem(color, selectedGems, gameData.gems_available)) return;
 
     setSelectedGems((current) => ({
       ...current,
@@ -97,7 +132,7 @@ export default function GameBoard({
   };
 
   const handleTakeGems = async () => {
-    if (!currentPlayerId || selectedTotal === 0) return;
+    if (!currentPlayerId || selectedTotal === 0 || mustDiscard) return;
 
     setIsTakingGems(true);
     try {
@@ -108,12 +143,69 @@ export default function GameBoard({
       });
       onGameDataChange(updatedGameData);
       handleClearSelection();
-      toast.success('Gems taken');
+      const updatedPlayerTotal = getGemTotal(updatedGameData.gems_owned[currentPlayerId]);
+      if (updatedPlayerTotal > 10) {
+        toast.info(`Gems taken. Discard ${updatedPlayerTotal - 10} to get back to 10.`);
+      } else {
+        toast.success('Gems taken');
+      }
     } catch (error) {
       console.error(error);
       toast.error('Could not take gems');
     } finally {
       setIsTakingGems(false);
+    }
+  };
+
+  const canAddDiscard = (color: GemColor) => {
+    if (!currentPlayerGems || !mustDiscard) return false;
+    if (selectedDiscardTotal >= discardRequired) return false;
+    return selectedDiscards[color] < currentPlayerGems[color];
+  };
+
+  const handleDiscardGemClick = (color: GemColor) => {
+    if (!canAddDiscard(color)) return;
+
+    setSelectedDiscards((current) => ({
+      ...current,
+      [color]:
+        getSelectedTotal(current) >= discardRequired ||
+        !currentPlayerGems ||
+        current[color] >= currentPlayerGems[color]
+          ? current[color]
+          : current[color] + 1,
+    }));
+  };
+
+  const handleRemoveDiscardGem = (color: GemColor) => {
+    setSelectedDiscards((current) => ({
+      ...current,
+      [color]: Math.max(0, current[color] - 1),
+    }));
+  };
+
+  const handleClearDiscards = () => {
+    setSelectedDiscards({ ...EMPTY_GEM_COUNTS });
+  };
+
+  const handleDiscardGems = async () => {
+    if (!currentPlayerId || selectedDiscardTotal !== discardRequired) return;
+
+    setIsDiscardingGems(true);
+    try {
+      const updatedGameData = await discardGems({
+        game_id: gameId,
+        player_id: currentPlayerId,
+        discarded_gems: selectedDiscards,
+      });
+      onGameDataChange(updatedGameData);
+      handleClearDiscards();
+      toast.success('Gems discarded');
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not discard gems');
+    } finally {
+      setIsDiscardingGems(false);
     }
   };
 
@@ -125,6 +217,8 @@ export default function GameBoard({
         selectedGems={selectedGems}
         getGemDisabled={(color) =>
           isTakingGems ||
+          isDiscardingGems ||
+          mustDiscard ||
           !currentPlayerId ||
           !canAddGem(color, selectedGems, gameData.gems_available)
         }
@@ -157,7 +251,7 @@ export default function GameBoard({
             type="button"
             variant="ghost"
             size="sm"
-            disabled={selectedTotal === 0 || isTakingGems}
+            disabled={selectedTotal === 0 || isTakingGems || mustDiscard}
             onClick={handleClearSelection}
           >
             Clear
@@ -165,13 +259,85 @@ export default function GameBoard({
           <Button
             type="button"
             size="sm"
-            disabled={!currentPlayerId || selectedTotal === 0 || isTakingGems}
+            disabled={!currentPlayerId || selectedTotal === 0 || isTakingGems || mustDiscard}
             onClick={handleTakeGems}
           >
             Take
           </Button>
         </div>
       </section>
+
+      {mustDiscard ? (
+        <section
+          className="splendor-gem-selection splendor-gem-selection--discard"
+          aria-label="Discard gems"
+        >
+          <div className="splendor-gem-selection__content">
+            <span className="splendor-gem-selection__label">Discard {discardRequired}</span>
+            <div className="splendor-gem-selection__chips">
+              {GEM_COLORS.map((color) => {
+                const ownedCount = currentPlayerGems?.[color] ?? 0;
+                const selectedDiscardCount = selectedDiscards[color];
+
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    className="splendor-gem-selection__chip"
+                    aria-label={`Discard one ${color} gem`}
+                    disabled={!canAddDiscard(color) || isDiscardingGems}
+                    onClick={() => handleDiscardGemClick(color)}
+                  >
+                    <GemChip color={color} count={ownedCount - selectedDiscardCount} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="splendor-gem-selection__content">
+            <span className="splendor-gem-selection__label">Returning</span>
+            <div className="splendor-gem-selection__chips">
+              {selectedDiscardEntries.length > 0 ? (
+                selectedDiscardEntries.map(({ color, count }) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="splendor-gem-selection__chip"
+                    aria-label={`Keep one selected ${color} gem`}
+                    disabled={isDiscardingGems}
+                    onClick={() => handleRemoveDiscardGem(color)}
+                  >
+                    <GemChip color={color} count={count} />
+                  </button>
+                ))
+              ) : (
+                <span className="splendor-gem-selection__empty">Choose gems to return</span>
+              )}
+            </div>
+          </div>
+          <div className="splendor-gem-selection__actions">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={selectedDiscardTotal === 0 || isDiscardingGems}
+              onClick={handleClearDiscards}
+            >
+              Clear
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={
+                !currentPlayerId || selectedDiscardTotal !== discardRequired || isDiscardingGems
+              }
+              onClick={handleDiscardGems}
+            >
+              Discard
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="splendor-card-board" aria-label="Development cards">
         {BOARD_LEVELS.map((level) => (

@@ -1,6 +1,6 @@
 import httpx
 
-from app.models.base import FetchGameDataResponse
+from app.models.base import MAX_PLAYER_GEMS, FetchGameDataResponse
 from app.models.games import (PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel,
                               GemColor)
 from app.services.database import DatabaseService
@@ -16,7 +16,6 @@ TAKEABLE_GEM_COLORS = [
     GemColor.RED,
     GemColor.WHITE,
 ]
-
 
 class GamesService:
     async def fetch_game_data(self, game_id: str) -> FetchGameDataResponse:
@@ -152,14 +151,22 @@ class GamesService:
                 detail="Player not found",
             )
         player_info = player_response.data[0]
+        current_player_gems = {
+            gem_color: player_info[gem_color.value] for gem_color in GemColor
+        }
+
+        if sum(current_player_gems.values()) > MAX_PLAYER_GEMS:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Discard gems down to 10 before taking more",
+            )
 
         updated_gems_available = {
             gem_color.value: gems_available[gem_color] - normalized_selection[gem_color]
             for gem_color in GemColor
         }
         updated_player_gems = {
-            gem_color.value: player_info[gem_color.value]
-            + normalized_selection[gem_color]
+            gem_color.value: current_player_gems[gem_color] + normalized_selection[gem_color]
             for gem_color in GemColor
         }
 
@@ -172,12 +179,111 @@ class GamesService:
 
         return await self.fetch_game_data(game_id=game_id)
 
+    async def discard_gems(
+        self,
+        game_id: str,
+        player_id: str,
+        discarded_gems: dict[GemColor, int],
+    ) -> FetchGameDataResponse:
+        normalized_discards = self._normalize_gem_counts(discarded_gems)
+        discarded_total = sum(normalized_discards.values())
+        if discarded_total < 1:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Select at least 1 gem to discard",
+            )
+
+        client = await DatabaseService().get_client()
+
+        player_response = (
+            await client.table("players")
+            .select("blue", "black", "green", "red", "white", "gold")
+            .eq("game_id", game_id)
+            .eq("id", player_id)
+            .execute()
+        )
+        if not player_response.data or not isinstance(player_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Player not found",
+            )
+        player_info = player_response.data[0]
+        player_gems = {gem_color: player_info[gem_color.value] for gem_color in GemColor}
+        current_total = sum(player_gems.values())
+
+        if current_total <= MAX_PLAYER_GEMS:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Player does not need to discard gems",
+            )
+
+        for gem_color, count in normalized_discards.items():
+            if count > player_gems[gem_color]:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"Cannot discard more {gem_color.value} gems than the player owns",
+                )
+
+        required_discards = current_total - MAX_PLAYER_GEMS
+        if discarded_total < required_discards:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Discard enough gems to get down to 10",
+            )
+        if discarded_total > required_discards:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Cannot discard more gems than needed to get down to 10",
+            )
+
+        gems_response = (
+            await client.table("gems")
+            .select("blue", "black", "green", "red", "white", "gold")
+            .eq("game_id", game_id)
+            .execute()
+        )
+        if not gems_response.data or not isinstance(gems_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Gems not found",
+            )
+        gems_info = gems_response.data[0]
+        gems_available = {gem_color: gems_info[gem_color] for gem_color in GemColor}
+
+        updated_player_gems = {
+            gem_color.value: player_gems[gem_color] - normalized_discards[gem_color]
+            for gem_color in GemColor
+        }
+        updated_gems_available = {
+            gem_color.value: gems_available[gem_color] + normalized_discards[gem_color]
+            for gem_color in GemColor
+        }
+
+        await client.table("players").update(updated_player_gems).eq(
+            "game_id", game_id
+        ).eq("id", player_id).execute()
+        await client.table("gems").update(updated_gems_available).eq(
+            "game_id", game_id
+        ).execute()
+
+        return await self.fetch_game_data(game_id=game_id)
+
+    def _normalize_gem_counts(self, gem_counts: dict[GemColor, int]) -> dict[GemColor, int]:
+        normalized_counts = {
+            gem_color: gem_counts.get(gem_color, 0) for gem_color in GemColor
+        }
+        for gem_color, count in normalized_counts.items():
+            if count < 0:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"Cannot use a negative number of {gem_color.value} gems",
+                )
+        return normalized_counts
+
     def _validate_selected_gems(
         self, selected_gems: dict[GemColor, int]
     ) -> dict[GemColor, int]:
-        normalized_selection = {
-            gem_color: selected_gems.get(gem_color, 0) for gem_color in GemColor
-        }
+        normalized_selection = self._normalize_gem_counts(selected_gems)
 
         if normalized_selection[GemColor.GOLD] > 0:
             raise InvalidGameLogicError(
@@ -186,11 +292,6 @@ class GamesService:
             )
 
         for gem_color, count in normalized_selection.items():
-            if count < 0:
-                raise InvalidGameLogicError(
-                    status_code=httpx.codes.BAD_REQUEST,
-                    detail=f"Cannot take a negative number of {gem_color.value} gems",
-                )
             if gem_color in TAKEABLE_GEM_COLORS and count > 2:
                 raise InvalidGameLogicError(
                     status_code=httpx.codes.BAD_REQUEST,

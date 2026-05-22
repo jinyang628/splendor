@@ -22,6 +22,14 @@ export const takeGemsRequestSchema = z.object({
 
 export type TakeGemsRequest = z.infer<typeof takeGemsRequestSchema>;
 
+export const discardGemsRequestSchema = z.object({
+  game_id: z.string(),
+  player_id: z.string(),
+  discarded_gems: gemCountsSchema,
+});
+
+export type DiscardGemsRequest = z.infer<typeof discardGemsRequestSchema>;
+
 export const gameCardSchema = gemCountsSchema.extend({
   id: z.string().uuid(),
   color: cardColorSchema,
