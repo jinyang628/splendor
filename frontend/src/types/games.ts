@@ -41,6 +41,7 @@ export type GameCard = z.infer<typeof gameCardSchema>;
 const cardsByLevelSchema = z.record(z.enum(['1', '2', '3']), z.array(gameCardSchema));
 
 export const fetchGameDataResponseSchema = z.object({
+  turn: z.number().int(),
   order: z.record(z.string(), z.number().int()),
   nicknames: z.record(z.string(), z.string()),
   gems_available: gemCountsSchema,

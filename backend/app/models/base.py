@@ -31,6 +31,7 @@ class DiscardGemsRequest(BaseModel):
 
 
 class FetchGameDataResponse(BaseModel):
+    turn: int
     order: dict[str, int]
     nicknames: dict[str, str]
     gems_available: dict[GemColor, int]

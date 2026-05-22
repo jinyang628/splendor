@@ -21,7 +21,7 @@ import {
 } from '@/types/cards';
 import type { FetchGameDataResponse } from '@/types/games';
 
-import { BOARD_LEVELS, getPlayersInOrder } from '@/lib/games';
+import { BOARD_LEVELS, getCurrentTurnPlayerId, getPlayersInOrder } from '@/lib/games';
 
 type GameBoardProps = {
   gameId: string;
@@ -79,10 +79,12 @@ export default function GameBoard({
   const [selectedDiscards, setSelectedDiscards] = useState<GemCounts>(EMPTY_GEM_COUNTS);
   const [isTakingGems, setIsTakingGems] = useState(false);
   const [isDiscardingGems, setIsDiscardingGems] = useState(false);
+  const currentTurnPlayerId = getCurrentTurnPlayerId(gameData);
+  const isCurrentUserTurn = Boolean(currentPlayerId && currentPlayerId === currentTurnPlayerId);
   const currentPlayerGems = currentPlayerId ? gameData.gems_owned[currentPlayerId] : undefined;
   const currentPlayerGemTotal = getGemTotal(currentPlayerGems);
   const discardRequired = Math.max(0, currentPlayerGemTotal - 10);
-  const mustDiscard = discardRequired > 0;
+  const mustDiscard = isCurrentUserTurn && discardRequired > 0;
 
   const selectedGemEntries = useMemo(
     () =>
@@ -111,8 +113,21 @@ export default function GameBoard({
     }
   }, [mustDiscard]);
 
+  useEffect(() => {
+    if (!isCurrentUserTurn) {
+      setSelectedGems({ ...EMPTY_GEM_COUNTS });
+      setSelectedDiscards({ ...EMPTY_GEM_COUNTS });
+    }
+  }, [isCurrentUserTurn]);
+
   const handleGemClick = (color: GemColor) => {
-    if (mustDiscard || !canAddGem(color, selectedGems, gameData.gems_available)) return;
+    if (
+      !isCurrentUserTurn ||
+      mustDiscard ||
+      !canAddGem(color, selectedGems, gameData.gems_available)
+    ) {
+      return;
+    }
 
     setSelectedGems((current) => ({
       ...current,
@@ -132,7 +147,7 @@ export default function GameBoard({
   };
 
   const handleTakeGems = async () => {
-    if (!currentPlayerId || selectedTotal === 0 || mustDiscard) return;
+    if (!currentPlayerId || !isCurrentUserTurn || selectedTotal === 0 || mustDiscard) return;
 
     setIsTakingGems(true);
     try {
@@ -158,7 +173,7 @@ export default function GameBoard({
   };
 
   const canAddDiscard = (color: GemColor) => {
-    if (!currentPlayerGems || !mustDiscard) return false;
+    if (!currentPlayerGems || !isCurrentUserTurn || !mustDiscard) return false;
     if (selectedDiscardTotal >= discardRequired) return false;
     return selectedDiscards[color] < currentPlayerGems[color];
   };
@@ -189,7 +204,7 @@ export default function GameBoard({
   };
 
   const handleDiscardGems = async () => {
-    if (!currentPlayerId || selectedDiscardTotal !== discardRequired) return;
+    if (!currentPlayerId || !isCurrentUserTurn || selectedDiscardTotal !== discardRequired) return;
 
     setIsDiscardingGems(true);
     try {
@@ -211,7 +226,16 @@ export default function GameBoard({
 
   return (
     <div className="splendor-game-board">
-      <PlayerBar players={players} currentPlayerId={currentPlayerId} />
+      <p className="splendor-turn-status">
+        {isCurrentUserTurn
+          ? 'Your turn'
+          : `${gameData.nicknames[currentTurnPlayerId ?? ''] ?? 'Waiting'}'s turn`}
+      </p>
+      <PlayerBar
+        players={players}
+        currentPlayerId={currentPlayerId}
+        currentTurnPlayerId={currentTurnPlayerId}
+      />
       <GemBank
         gemsAvailable={gameData.gems_available}
         selectedGems={selectedGems}
@@ -220,6 +244,7 @@ export default function GameBoard({
           isDiscardingGems ||
           mustDiscard ||
           !currentPlayerId ||
+          !isCurrentUserTurn ||
           !canAddGem(color, selectedGems, gameData.gems_available)
         }
         onGemClick={handleGemClick}
@@ -251,7 +276,7 @@ export default function GameBoard({
             type="button"
             variant="ghost"
             size="sm"
-            disabled={selectedTotal === 0 || isTakingGems || mustDiscard}
+            disabled={selectedTotal === 0 || isTakingGems || mustDiscard || !isCurrentUserTurn}
             onClick={handleClearSelection}
           >
             Clear
@@ -259,7 +284,13 @@ export default function GameBoard({
           <Button
             type="button"
             size="sm"
-            disabled={!currentPlayerId || selectedTotal === 0 || isTakingGems || mustDiscard}
+            disabled={
+              !currentPlayerId ||
+              !isCurrentUserTurn ||
+              selectedTotal === 0 ||
+              isTakingGems ||
+              mustDiscard
+            }
             onClick={handleTakeGems}
           >
             Take

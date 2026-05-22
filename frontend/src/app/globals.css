@@ -661,6 +661,11 @@
     @apply flex flex-wrap items-center justify-center gap-3;
   }
 
+  .splendor-turn-status {
+    @apply text-primary text-center text-sm font-semibold tracking-[0.18em] uppercase;
+    font-family: var(--font-display);
+  }
+
   .splendor-gem-bank__button {
     @apply focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-full p-1 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0;
   }
@@ -733,6 +738,10 @@
     box-shadow:
       0 0 0 1px color-mix(in oklch, var(--splendor-gold) 35%, transparent),
       0 8px 24px -8px color-mix(in oklch, var(--splendor-gold) 45%, transparent);
+  }
+
+  .splendor-player-seat--turn {
+    @apply border-primary/70 ring-primary/35 ring-2;
   }
 
   .splendor-player-seat__order {

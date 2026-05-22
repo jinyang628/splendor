@@ -22,3 +22,11 @@ export function getPlayersInOrder(data: FetchGameDataResponse): PlayerInOrder[] 
       gemsOwned: data.gems_owned[playerId],
     }));
 }
+
+export function getCurrentTurnPlayerId(data: FetchGameDataResponse): string | null {
+  const players = getPlayersInOrder(data);
+  if (players.length === 0) return null;
+
+  const turnIndex = (data.turn - 1) % players.length;
+  return players[turnIndex]?.playerId ?? null;
+}

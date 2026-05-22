@@ -10,7 +10,7 @@ import GameBoard from '@/components/game/game-board';
 
 import type { FetchGameDataResponse } from '@/types/games';
 
-import { getCurrentUserId } from '@/lib/supabase';
+import { getCurrentUserId, supabase } from '@/lib/supabase';
 
 type GamePageProps = { params: Promise<{ gameId: string }> };
 
@@ -24,6 +24,11 @@ export default function GamePage({ params }: GamePageProps) {
     if (!gameId) return;
 
     let cancelled = false;
+
+    const refreshGameData = async () => {
+      const data = await fetchGameData(gameId);
+      if (!cancelled) setGameData(data);
+    };
 
     (async () => {
       try {
@@ -40,8 +45,30 @@ export default function GamePage({ params }: GamePageProps) {
       }
     })();
 
+    const channel = supabase
+      .channel(`game-turn-${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`,
+        },
+        (payload) => {
+          if (payload.old?.turn !== payload.new?.turn) {
+            refreshGameData().catch((error) => {
+              if (!cancelled) toast.error('Failed to refresh game');
+              console.error(error);
+            });
+          }
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [gameId]);
 
