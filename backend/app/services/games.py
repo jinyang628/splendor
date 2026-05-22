@@ -1,11 +1,21 @@
 import httpx
 
 from app.models.base import FetchGameDataResponse
-from app.models.games import PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel, GemColor
+from app.models.games import (PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel,
+                              GemColor)
 from app.services.database import DatabaseService
 from app.services.utils import instantiate_game_cards, serialize_cards_by_level
-from app.utils.errors import InvalidDatabaseEntryError, RoomNotFoundError
+from app.utils.errors import (InvalidDatabaseEntryError, InvalidGameLogicError,
+                              RoomNotFoundError)
 from app.utils.rooms import generate_nicknames
+
+TAKEABLE_GEM_COLORS = [
+    GemColor.BLACK,
+    GemColor.BLUE,
+    GemColor.GREEN,
+    GemColor.RED,
+    GemColor.WHITE,
+]
 
 
 class GamesService:
@@ -27,8 +37,14 @@ class GamesService:
             .eq("game_id", game_id)
             .execute()
         )
-        if not response.data or not isinstance(response.data, list) or not response.data[0]:
-            raise RoomNotFoundError(status_code=httpx.codes.NOT_FOUND, detail="Players not found")
+        if (
+            not response.data
+            or not isinstance(response.data, list)
+            or not response.data[0]
+        ):
+            raise RoomNotFoundError(
+                status_code=httpx.codes.NOT_FOUND, detail="Players not found"
+            )
         order: dict[str, int] = {}
         nicknames: dict[str, str] = {}
         gems_owned: dict[str, dict[GemColor, int]] = {}
@@ -46,7 +62,11 @@ class GamesService:
             .eq("game_id", game_id)
             .execute()
         )
-        if not response.data or not isinstance(response.data, list) or not response.data[0]:
+        if (
+            not response.data
+            or not isinstance(response.data, list)
+            or not response.data[0]
+        ):
             raise InvalidDatabaseEntryError(
                 status_code=httpx.codes.NOT_FOUND,
                 detail="Gems not found",
@@ -56,9 +76,16 @@ class GamesService:
             gems_available[gem_color] = gems_info[gem_color]
 
         response = (
-            await client.table("cards").select("open", "closed").eq("game_id", game_id).execute()
+            await client.table("cards")
+            .select("open", "closed")
+            .eq("game_id", game_id)
+            .execute()
         )
-        if not response.data or not isinstance(response.data, list) or not response.data[0]:
+        if (
+            not response.data
+            or not isinstance(response.data, list)
+            or not response.data[0]
+        ):
             raise InvalidDatabaseEntryError(
                 status_code=httpx.codes.NOT_FOUND,
                 detail="Game not found",
@@ -84,14 +111,169 @@ class GamesService:
             open=open_cards,
         )
 
+    async def take_gems(
+        self,
+        game_id: str,
+        player_id: str,
+        selected_gems: dict[GemColor, int],
+    ) -> FetchGameDataResponse:
+        normalized_selection = self._validate_selected_gems(selected_gems)
+        client = await DatabaseService().get_client()
+
+        gems_response = (
+            await client.table("gems")
+            .select("blue", "black", "green", "red", "white", "gold")
+            .eq("game_id", game_id)
+            .execute()
+        )
+        if not gems_response.data or not isinstance(gems_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Gems not found",
+            )
+        gems_info = gems_response.data[0]
+        gems_available = {gem_color: gems_info[gem_color] for gem_color in GemColor}
+
+        self._validate_take_against_available_gems(
+            selected_gems=normalized_selection,
+            gems_available=gems_available,
+        )
+
+        player_response = (
+            await client.table("players")
+            .select("blue", "black", "green", "red", "white", "gold")
+            .eq("game_id", game_id)
+            .eq("id", player_id)
+            .execute()
+        )
+        if not player_response.data or not isinstance(player_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Player not found",
+            )
+        player_info = player_response.data[0]
+
+        updated_gems_available = {
+            gem_color.value: gems_available[gem_color] - normalized_selection[gem_color]
+            for gem_color in GemColor
+        }
+        updated_player_gems = {
+            gem_color.value: player_info[gem_color.value]
+            + normalized_selection[gem_color]
+            for gem_color in GemColor
+        }
+
+        await client.table("gems").update(updated_gems_available).eq(
+            "game_id", game_id
+        ).execute()
+        await client.table("players").update(updated_player_gems).eq(
+            "game_id", game_id
+        ).eq("id", player_id).execute()
+
+        return await self.fetch_game_data(game_id=game_id)
+
+    def _validate_selected_gems(
+        self, selected_gems: dict[GemColor, int]
+    ) -> dict[GemColor, int]:
+        normalized_selection = {
+            gem_color: selected_gems.get(gem_color, 0) for gem_color in GemColor
+        }
+
+        if normalized_selection[GemColor.GOLD] > 0:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Gold gems cannot be taken with this action",
+            )
+
+        for gem_color, count in normalized_selection.items():
+            if count < 0:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"Cannot take a negative number of {gem_color.value} gems",
+                )
+            if gem_color in TAKEABLE_GEM_COLORS and count > 2:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"Cannot take more than 2 {gem_color.value} gems",
+                )
+
+        total_selected = sum(normalized_selection.values())
+        selected_colors = [
+            gem_color
+            for gem_color in TAKEABLE_GEM_COLORS
+            if normalized_selection[gem_color] > 0
+        ]
+
+        if total_selected < 1:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Select at least 1 gem",
+            )
+        if total_selected > 3:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Cannot take more than 3 gems",
+            )
+
+        is_two_same_color = len(selected_colors) == 1 and total_selected == 2
+        is_unique_selection = all(
+            normalized_selection[gem_color] == 1 for gem_color in selected_colors
+        )
+
+        if not is_two_same_color and not is_unique_selection:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Take up to 3 unique gems or exactly 2 gems of the same color",
+            )
+
+        return normalized_selection
+
+    def _validate_take_against_available_gems(
+        self,
+        selected_gems: dict[GemColor, int],
+        gems_available: dict[GemColor, int],
+    ) -> None:
+        for gem_color in TAKEABLE_GEM_COLORS:
+            if selected_gems[gem_color] > gems_available[gem_color]:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"Not enough {gem_color.value} gems available",
+                )
+
+        selected_colors = [
+            gem_color
+            for gem_color in TAKEABLE_GEM_COLORS
+            if selected_gems[gem_color] > 0
+        ]
+        is_two_same_color = (
+            len(selected_colors) == 1 and selected_gems[selected_colors[0]] == 2
+        )
+        if is_two_same_color:
+            gem_color = selected_colors[0]
+            if gems_available[gem_color] - 2 < 2:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail=f"At least 2 {gem_color.value} gems must remain after taking 2",
+                )
+
     async def initialize(self, game_id: str) -> None:
         client = await DatabaseService().get_client()
-        response = await client.table("games").select("player_ids").eq("id", game_id).execute()
-        if not response.data or not isinstance(response.data, list) or not response.data[0]:
-            raise RoomNotFoundError(status_code=httpx.codes.NOT_FOUND, detail="Room not found")
+        response = (
+            await client.table("games").select("player_ids").eq("id", game_id).execute()
+        )
+        if (
+            not response.data
+            or not isinstance(response.data, list)
+            or not response.data[0]
+        ):
+            raise RoomNotFoundError(
+                status_code=httpx.codes.NOT_FOUND, detail="Room not found"
+            )
 
         player_info = response.data[0]
-        player_ids: list = player_info.get("player_ids") if isinstance(player_info, dict) else None
+        player_ids: list = (
+            player_info.get("player_ids") if isinstance(player_info, dict) else None
+        )
         if not player_ids:
             raise InvalidDatabaseEntryError(
                 status_code=httpx.codes.INTERNAL_SERVER_ERROR,
@@ -135,4 +317,6 @@ class GamesService:
                 "open": serialize_cards_by_level(open_cards),
             }
         ).execute()
-        await client.table("games").update({"is_ready": True}).eq("id", game_id).execute()
+        await client.table("games").update({"is_ready": True}).eq(
+            "id", game_id
+        ).execute()

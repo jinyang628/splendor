@@ -1,10 +1,11 @@
 import logging
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 
-from app.models.base import FetchGameDataResponse, InitializeRequest
+from app.models.base import (FetchGameDataResponse, InitializeRequest,
+                             TakeGemsRequest)
 from app.services.games import GamesService
 
 log = logging.getLogger(__name__)
@@ -40,6 +41,45 @@ class GamesController:
                 return JSONResponse(
                     content={
                         "message": "Error initializing game",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
+                )
+
+        @router.post("/gems/take", response_model=FetchGameDataResponse)
+        async def take_gems(input: TakeGemsRequest) -> FetchGameDataResponse:
+            try:
+                log.info(
+                    "Taking gems for game %s and player %s",
+                    input.game_id,
+                    input.player_id,
+                )
+                return await self.service.take_gems(
+                    game_id=input.game_id,
+                    player_id=input.player_id,
+                    selected_gems=input.selected_gems,
+                )
+            except HTTPException as e:
+                log.warning(
+                    "Invalid take gems request for game %s and player %s: %s",
+                    input.game_id,
+                    input.player_id,
+                    e.detail,
+                )
+                return JSONResponse(
+                    content={"message": e.detail},
+                    status_code=e.status_code,
+                )
+            except Exception as e:
+                log.exception(
+                    "Error taking gems for game %s and player %s: %s",
+                    input.game_id,
+                    input.player_id,
+                    e,
+                )
+                return JSONResponse(
+                    content={
+                        "message": "Error taking gems",
                         "game_id": input.game_id,
                     },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,

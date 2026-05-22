@@ -14,6 +14,14 @@ export const fetchGameDataRequestSchema = z.object({
 
 export type FetchGameDataRequest = z.infer<typeof fetchGameDataRequestSchema>;
 
+export const takeGemsRequestSchema = z.object({
+  game_id: z.string(),
+  player_id: z.string(),
+  selected_gems: gemCountsSchema,
+});
+
+export type TakeGemsRequest = z.infer<typeof takeGemsRequestSchema>;
+
 export const gameCardSchema = gemCountsSchema.extend({
   id: z.string().uuid(),
   color: cardColorSchema,

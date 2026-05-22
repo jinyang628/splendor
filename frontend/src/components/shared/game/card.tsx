@@ -19,10 +19,11 @@ export default function Card({
   green,
   red,
   white,
+  gold,
   className,
   onClick,
 }: CardProps) {
-  const costEntries = getNonZeroGemCosts({ black, blue, green, red, white });
+  const costEntries = getNonZeroGemCosts({ black, blue, green, red, white, gold });
 
   return (
     <div

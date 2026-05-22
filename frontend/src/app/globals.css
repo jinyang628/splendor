@@ -662,11 +662,52 @@
   }
 
   .splendor-gem-bank__button {
-    @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-1 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0;
+    @apply focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-full p-1 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0;
+  }
+
+  .splendor-gem-bank__button--selected {
+    @apply ring-splendor-gold/70 ring-2;
+  }
+
+  .splendor-gem-bank__selected-count {
+    @apply bg-splendor-gold text-splendor-velvet-deep absolute -top-1 -right-1 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold shadow-sm;
   }
 
   .splendor-gem-bank .gem-chip {
     @apply size-11 text-base;
+  }
+
+  .splendor-gem-selection {
+    @apply border-border/60 bg-card/80 flex flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .splendor-gem-selection__content {
+    @apply flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center;
+  }
+
+  .splendor-gem-selection__label {
+    @apply text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.18em] uppercase;
+    font-family: var(--font-display);
+  }
+
+  .splendor-gem-selection__chips {
+    @apply flex min-h-8 flex-wrap items-center gap-2;
+  }
+
+  .splendor-gem-selection__chip {
+    @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-0.5 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0;
+  }
+
+  .splendor-gem-selection__chip .gem-chip {
+    @apply size-8 text-sm;
+  }
+
+  .splendor-gem-selection__empty {
+    @apply text-muted-foreground text-sm;
+  }
+
+  .splendor-gem-selection__actions {
+    @apply flex shrink-0 items-center justify-end gap-2;
   }
 
   .splendor-player-bar {

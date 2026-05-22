@@ -18,6 +18,7 @@ export default function GameCardView({ card, className, onClick }: GameCardProps
       green={card.green}
       red={card.red}
       white={card.white}
+      gold={card.gold}
       className={className}
       onClick={onClick}
     />

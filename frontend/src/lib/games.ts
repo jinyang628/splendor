@@ -1,5 +1,5 @@
-import type { FetchGameDataResponse } from '@/types/games';
 import type { GemCounts } from '@/types/cards';
+import type { FetchGameDataResponse } from '@/types/games';
 
 export type PlayerInOrder = {
   playerId: string;

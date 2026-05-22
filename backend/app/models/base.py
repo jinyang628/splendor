@@ -16,6 +16,12 @@ class InitializeRequest(BaseModel):
     game_id: str
 
 
+class TakeGemsRequest(BaseModel):
+    game_id: str
+    player_id: str
+    selected_gems: dict[GemColor, int]
+
+
 class FetchGameDataResponse(BaseModel):
     order: dict[str, int]
     nicknames: dict[str, str]
