@@ -24,10 +24,20 @@ export default function GamePage({ params }: GamePageProps) {
     if (!gameId) return;
 
     let cancelled = false;
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const refreshGameData = async () => {
       const data = await fetchGameData(gameId);
       if (!cancelled) setGameData(data);
+    };
+    const scheduleRefreshGameData = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        refreshGameData().catch((error) => {
+          if (!cancelled) toast.error('Failed to refresh game');
+          console.error(error);
+        });
+      }, 120);
     };
 
     (async () => {
@@ -46,7 +56,7 @@ export default function GamePage({ params }: GamePageProps) {
     })();
 
     const channel = supabase
-      .channel(`game-turn-${gameId}`)
+      .channel(`game-data-${gameId}`)
       .on(
         'postgres_changes',
         {
@@ -57,17 +67,35 @@ export default function GamePage({ params }: GamePageProps) {
         },
         (payload) => {
           if (payload.old?.turn !== payload.new?.turn) {
-            refreshGameData().catch((error) => {
-              if (!cancelled) toast.error('Failed to refresh game');
-              console.error(error);
-            });
+            scheduleRefreshGameData();
           }
         },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'cards',
+          filter: `game_id=eq.${gameId}`,
+        },
+        scheduleRefreshGameData,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'players',
+          filter: `game_id=eq.${gameId}`,
+        },
+        scheduleRefreshGameData,
       )
       .subscribe();
 
     return () => {
       cancelled = true;
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
   }, [gameId]);

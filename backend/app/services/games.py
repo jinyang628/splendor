@@ -473,6 +473,7 @@ class GamesService:
                 "red",
                 "white",
                 "gold",
+                "reserved",
                 "purchased",
             )
             .eq("game_id", game_id)
@@ -491,6 +492,9 @@ class GamesService:
         }
         purchased_cards: list[Card] = [
             Card.model_validate(card) for card in (player_info.get("purchased") or [])
+        ]
+        reserved_cards: list[Card] = [
+            Card.model_validate(card) for card in (player_info.get("reserved") or [])
         ]
 
         await self._validate_player_turn(
@@ -513,26 +517,35 @@ class GamesService:
                 detail="Card id must be a valid UUID",
             ) from error
 
-        cards_response = (
-            await client.table("cards")
-            .select("open", "closed")
-            .eq("game_id", game_id)
-            .execute()
+        bought_card = next(
+            (card for card in reserved_cards if card.id == card_uuid), None
         )
-        if not cards_response.data or not isinstance(cards_response.data, list):
-            raise InvalidDatabaseEntryError(
-                status_code=httpx.codes.NOT_FOUND,
-                detail="Cards not found",
-            )
-        card_info = cards_response.data[0]
-        closed_cards = deserialize_cards_by_level(card_info["closed"])
-        open_cards = deserialize_cards_by_level(card_info["open"])
+        is_reserved_card = bought_card is not None
 
-        closed_cards, open_cards, bought_card = take_open_card(
-            card_uuid=card_uuid,
-            open_cards=open_cards,
-            closed_cards=closed_cards,
-        )
+        cards_response = None
+        closed_cards = None
+        open_cards = None
+        if not bought_card:
+            cards_response = (
+                await client.table("cards")
+                .select("open", "closed")
+                .eq("game_id", game_id)
+                .execute()
+            )
+            if not cards_response.data or not isinstance(cards_response.data, list):
+                raise InvalidDatabaseEntryError(
+                    status_code=httpx.codes.NOT_FOUND,
+                    detail="Cards not found",
+                )
+            card_info = cards_response.data[0]
+            closed_cards = deserialize_cards_by_level(card_info["closed"])
+            open_cards = deserialize_cards_by_level(card_info["open"])
+
+            closed_cards, open_cards, bought_card = take_open_card(
+                card_uuid=card_uuid,
+                open_cards=open_cards,
+                closed_cards=closed_cards,
+            )
 
         payment = self._calculate_card_payment(
             card=bought_card,
@@ -564,18 +577,24 @@ class GamesService:
         }
         purchased_cards.append(bought_card)
 
-        await client.table("cards").update(
-            {
-                "closed": serialize_cards_by_level(closed_cards),
-                "open": serialize_cards_by_level(open_cards),
-            }
-        ).eq("game_id", game_id).execute()
+        if not is_reserved_card and closed_cards is not None and open_cards is not None:
+            await client.table("cards").update(
+                {
+                    "closed": serialize_cards_by_level(closed_cards),
+                    "open": serialize_cards_by_level(open_cards),
+                }
+            ).eq("game_id", game_id).execute()
         await client.table("gems").update(updated_gems_available).eq(
             "game_id", game_id
         ).execute()
         await client.table("players").update(
             {
                 **updated_player_gems,
+                "reserved": [
+                    card.model_dump(mode="json")
+                    for card in reserved_cards
+                    if card.id != card_uuid
+                ],
                 "purchased": [card.model_dump(mode="json") for card in purchased_cards],
             }
         ).eq("game_id", game_id).eq("id", player_id).execute()

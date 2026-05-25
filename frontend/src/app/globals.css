@@ -661,6 +661,10 @@
     @apply flex flex-wrap items-center justify-center gap-3;
   }
 
+  .splendor-board-actions {
+    @apply flex justify-center;
+  }
+
   .splendor-turn-status {
     @apply text-primary text-center text-sm font-semibold tracking-[0.18em] uppercase;
     font-family: var(--font-display);
@@ -828,6 +832,29 @@
     @apply relative flex shrink-0 items-center justify-center;
   }
 
+  .splendor-card-row__cell--reserved-highlight::after {
+    @apply pointer-events-none absolute -inset-2 z-20 rounded-2xl border-2;
+    content: '';
+    border-color: color-mix(in oklch, var(--splendor-gold) 80%, white);
+    animation: reserved-card-sparkle 1.8s ease-out both;
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--splendor-gold) 18%, transparent),
+      0 0 28px color-mix(in oklch, var(--splendor-gold) 70%, transparent);
+  }
+
+  .splendor-card-row__cell--reserved-highlight::before {
+    @apply pointer-events-none absolute -inset-3 z-20 rounded-2xl;
+    content: '';
+    background:
+      radial-gradient(circle, white 0 18%, transparent 20%) 12% 22% / 12px 12px no-repeat,
+      radial-gradient(circle, var(--splendor-gold) 0 18%, transparent 20%) 88% 18% / 14px 14px
+        no-repeat,
+      radial-gradient(circle, white 0 18%, transparent 20%) 82% 86% / 10px 10px no-repeat,
+      radial-gradient(circle, var(--splendor-gold) 0 18%, transparent 20%) 18% 82% / 11px 11px
+        no-repeat;
+    animation: reserved-card-sparkle-dots 1.8s ease-out both;
+  }
+
   .splendor-card-slot {
     @apply border-border/40 bg-muted/30 h-36 w-24 shrink-0 rounded-xl border-2 border-dashed;
   }
@@ -876,6 +903,46 @@
 
   .splendor-card-action-menu__actions {
     @apply flex flex-col gap-1.5;
+  }
+
+  .splendor-reserved-trigger__count {
+    @apply bg-primary text-primary-foreground inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold tabular-nums;
+  }
+
+  .splendor-reserved-drawer__cards {
+    @apply grid gap-3 overflow-y-auto px-4 pb-4;
+  }
+
+  .splendor-reserved-drawer__empty {
+    @apply text-muted-foreground rounded-md border border-dashed px-4 py-8 text-center text-sm;
+  }
+
+  .splendor-reserved-card {
+    @apply border-border/70 bg-card grid grid-cols-[auto_1fr] items-center gap-3 rounded-md border p-3 shadow-sm;
+  }
+
+  .splendor-reserved-card .splendor-card {
+    @apply h-28 w-[4.6rem];
+  }
+
+  .splendor-reserved-card .splendor-card__costs {
+    @apply min-h-10 gap-1;
+  }
+
+  .splendor-reserved-card .gem-chip {
+    @apply size-4 text-[9px];
+  }
+
+  .splendor-reserved-card__status {
+    @apply text-muted-foreground flex items-center gap-2 text-sm font-medium;
+  }
+
+  .splendor-reserved-card__status svg {
+    @apply size-4;
+  }
+
+  .splendor-reserved-card [data-slot='button'] {
+    @apply col-start-2 w-full;
   }
 
   .splendor-game-panel {
@@ -930,5 +997,36 @@
   }
   50% {
     filter: brightness(1.15);
+  }
+}
+
+@keyframes reserved-card-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  18%,
+  68% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes reserved-card-sparkle-dots {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) rotate(0deg);
+  }
+  25%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(12deg);
   }
 }

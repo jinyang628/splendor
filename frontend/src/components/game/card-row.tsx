@@ -6,6 +6,7 @@ import GameCardView from '@/components/game/game-card';
 import type { GameCard } from '@/types/games';
 
 import type { BoardLevel } from '@/lib/games';
+import { cn } from '@/lib/utils';
 
 const OPEN_SLOTS = 4;
 
@@ -16,6 +17,8 @@ type CardRowProps = {
   onDeckClick?: () => void;
   onOpenCardClick?: (card: GameCard) => void;
   isInteractionDisabled?: boolean;
+  highlightedDeck?: boolean;
+  highlightedOpenIndex?: number | null;
   renderDeckMenu?: () => ReactNode;
   renderOpenCardMenu?: (card: GameCard) => ReactNode;
 };
@@ -27,6 +30,8 @@ export default function CardRow({
   onDeckClick,
   onOpenCardClick,
   isInteractionDisabled,
+  highlightedDeck,
+  highlightedOpenIndex,
   renderDeckMenu,
   renderOpenCardMenu,
 }: CardRowProps) {
@@ -35,7 +40,13 @@ export default function CardRow({
 
   return (
     <div className="splendor-card-row" role="row" aria-label={`Level ${levelNumber} cards`}>
-      <div className="splendor-card-row__cell" role="cell">
+      <div
+        className={cn(
+          'splendor-card-row__cell',
+          highlightedDeck && 'splendor-card-row__cell--reserved-highlight',
+        )}
+        role="cell"
+      >
         <ClosedDeck
           level={levelNumber}
           remaining={closedCards.length}
@@ -47,7 +58,10 @@ export default function CardRow({
       {slots.map((card, index) => (
         <div
           key={card?.id ?? `empty-${level}-${index}`}
-          className="splendor-card-row__cell"
+          className={cn(
+            'splendor-card-row__cell',
+            highlightedOpenIndex === index && 'splendor-card-row__cell--reserved-highlight',
+          )}
           role="cell"
         >
           {card ? (

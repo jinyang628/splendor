@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { buyCard } from '@/actions/games/buyCard';
 import { discardGems } from '@/actions/games/discardGems';
@@ -12,6 +12,7 @@ import CardActionMenu from '@/components/game/card-action-menu';
 import CardRow from '@/components/game/card-row';
 import GemBank from '@/components/game/gem-bank';
 import PlayerBar from '@/components/game/player-bar';
+import ReservedCardsDrawer from '@/components/game/reserved-cards-drawer';
 import GemChip from '@/components/shared/game/gem-chip';
 import { Button } from '@/components/ui/button';
 
@@ -34,6 +35,11 @@ type GameBoardProps = {
 };
 
 type ActiveCardMenu = { type: 'open'; cardId: string } | { type: 'closed'; level: number } | null;
+
+type ReservedHighlight =
+  | { type: 'open'; level: string; index: number }
+  | { type: 'closed'; level: string }
+  | null;
 
 const EMPTY_GEM_COUNTS: GemCounts = {
   black: 0,
@@ -73,6 +79,39 @@ function canAddGem(color: GemColor, selectedGems: GemCounts, gemsAvailable: GemC
   return CARD_COLORS.every((gemColor) => selectedGems[gemColor] <= 1);
 }
 
+function getReservedCardTotal(gameData: FetchGameDataResponse) {
+  return Object.values(gameData.reserved).reduce((total, cards) => total + cards.length, 0);
+}
+
+function getReservationHighlight(
+  previousGameData: FetchGameDataResponse,
+  nextGameData: FetchGameDataResponse,
+): ReservedHighlight {
+  if (getReservedCardTotal(nextGameData) <= getReservedCardTotal(previousGameData)) return null;
+
+  for (const level of BOARD_LEVELS) {
+    const previousOpenCards = previousGameData.open[level] ?? [];
+    const nextOpenCards = nextGameData.open[level] ?? [];
+    for (let index = 0; index < Math.max(previousOpenCards.length, nextOpenCards.length); index++) {
+      const previousCardId = previousOpenCards[index]?.id ?? null;
+      const nextCardId = nextOpenCards[index]?.id ?? null;
+      if (previousCardId && previousCardId !== nextCardId) {
+        return { type: 'open', level, index };
+      }
+    }
+  }
+
+  for (const level of BOARD_LEVELS) {
+    const previousClosedCount = previousGameData.closed[level]?.length ?? 0;
+    const nextClosedCount = nextGameData.closed[level]?.length ?? 0;
+    if (nextClosedCount < previousClosedCount) {
+      return { type: 'closed', level };
+    }
+  }
+
+  return null;
+}
+
 export default function GameBoard({
   gameId,
   gameData,
@@ -87,9 +126,16 @@ export default function GameBoard({
   const [isReservingCard, setIsReservingCard] = useState(false);
   const [isBuyingCard, setIsBuyingCard] = useState(false);
   const [activeCardMenu, setActiveCardMenu] = useState<ActiveCardMenu>(null);
+  const [isReservedDrawerOpen, setIsReservedDrawerOpen] = useState(false);
+  const [reservedHighlight, setReservedHighlight] = useState<ReservedHighlight>(null);
+  const previousGameDataRef = useRef<FetchGameDataResponse | null>(null);
+  const reservedHighlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentTurnPlayerId = getCurrentTurnPlayerId(gameData);
   const isCurrentUserTurn = Boolean(currentPlayerId && currentPlayerId === currentTurnPlayerId);
   const currentPlayerGems = currentPlayerId ? gameData.gems_owned[currentPlayerId] : undefined;
+  const currentPlayerReservedCards = currentPlayerId
+    ? (gameData.reserved[currentPlayerId] ?? [])
+    : [];
   const currentPlayerGemTotal = getGemTotal(currentPlayerGems);
   const discardRequired = Math.max(0, currentPlayerGemTotal - 10);
   const mustDiscard = isCurrentUserTurn && discardRequired > 0;
@@ -123,6 +169,33 @@ export default function GameBoard({
       { ...EMPTY_GEM_COUNTS },
     );
   }, [currentPlayerId, gameData.purchased]);
+
+  useEffect(() => {
+    const previousGameData = previousGameDataRef.current;
+    if (previousGameData) {
+      const nextHighlight = getReservationHighlight(previousGameData, gameData);
+      if (nextHighlight) {
+        setReservedHighlight(nextHighlight);
+        if (reservedHighlightTimeoutRef.current) {
+          clearTimeout(reservedHighlightTimeoutRef.current);
+        }
+        reservedHighlightTimeoutRef.current = setTimeout(() => {
+          setReservedHighlight(null);
+          reservedHighlightTimeoutRef.current = null;
+        }, 1800);
+      }
+    }
+    previousGameDataRef.current = gameData;
+  }, [gameData]);
+
+  useEffect(
+    () => () => {
+      if (reservedHighlightTimeoutRef.current) {
+        clearTimeout(reservedHighlightTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!mustDiscard) {
@@ -255,8 +328,8 @@ export default function GameBoard({
         !isBuyingCard,
     );
 
-  const canBuyCard = (card: GameCard) => {
-    if (!currentPlayerGems || !canReserveCard()) return false;
+  const canAffordCard = (card: GameCard) => {
+    if (!currentPlayerGems) return false;
 
     let goldNeeded = 0;
     for (const color of CARD_COLORS) {
@@ -267,6 +340,8 @@ export default function GameBoard({
 
     return goldNeeded <= currentPlayerGems.gold;
   };
+
+  const canBuyCard = (card: GameCard) => canReserveCard() && canAffordCard(card);
 
   const handleReserveOpenCard = async (card: GameCard) => {
     if (!currentPlayerId || !canReserveCard()) return;
@@ -324,7 +399,7 @@ export default function GameBoard({
     }
   };
 
-  const handleBuyOpenCard = async (card: GameCard) => {
+  const handleBuyCard = async (card: GameCard) => {
     if (!currentPlayerId || !canBuyCard(card)) return;
 
     setIsBuyingCard(true);
@@ -337,6 +412,7 @@ export default function GameBoard({
       onGameDataChange(updatedGameData);
       handleClearSelection();
       setActiveCardMenu(null);
+      setIsReservedDrawerOpen(false);
       toast.success('Card bought');
     } catch (error) {
       console.error(error);
@@ -358,6 +434,17 @@ export default function GameBoard({
         currentPlayerId={currentPlayerId}
         currentTurnPlayerId={currentTurnPlayerId}
       />
+      <div className="splendor-board-actions">
+        <ReservedCardsDrawer
+          reservedCards={currentPlayerReservedCards}
+          open={isReservedDrawerOpen}
+          onOpenChange={setIsReservedDrawerOpen}
+          canAfford={canAffordCard}
+          canBuyNow={canBuyCard}
+          isBusy={isBuyingCard}
+          onBuy={handleBuyCard}
+        />
+      </div>
       <GemBank
         gemsAvailable={gameData.gems_available}
         selectedGems={selectedGems}
@@ -505,6 +592,14 @@ export default function GameBoard({
             isInteractionDisabled={!canReserveCard()}
             onDeckClick={() => setActiveCardMenu({ type: 'closed', level: Number(level) })}
             onOpenCardClick={(card) => setActiveCardMenu({ type: 'open', cardId: card.id })}
+            highlightedDeck={
+              reservedHighlight?.type === 'closed' && reservedHighlight.level === level
+            }
+            highlightedOpenIndex={
+              reservedHighlight?.type === 'open' && reservedHighlight.level === level
+                ? reservedHighlight.index
+                : null
+            }
             renderDeckMenu={() =>
               activeCardMenu?.type === 'closed' && activeCardMenu.level === Number(level) ? (
                 <CardActionMenu
@@ -521,7 +616,7 @@ export default function GameBoard({
                   title="Open card"
                   canBuy={canBuyCard(card)}
                   isBusy={isReservingCard || isBuyingCard}
-                  onBuy={() => handleBuyOpenCard(card)}
+                  onBuy={() => handleBuyCard(card)}
                   onReserve={() => handleReserveOpenCard(card)}
                   onClose={() => setActiveCardMenu(null)}
                 />
