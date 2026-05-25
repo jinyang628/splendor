@@ -30,11 +30,25 @@ class DiscardGemsRequest(BaseModel):
     discarded_gems: dict[GemColor, int]
 
 
+class ReserveCardSource(StrEnum):
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class ReserveCardRequest(BaseModel):
+    game_id: str
+    player_id: str
+    source: ReserveCardSource
+    card_id: str | None = None
+    level: CardLevel | None = None
+
+
 class FetchGameDataResponse(BaseModel):
     turn: int
     order: dict[str, int]
     nicknames: dict[str, str]
     gems_available: dict[GemColor, int]
     gems_owned: dict[str, dict[GemColor, int]]
+    reserved: dict[str, list[Card]]
     closed: dict[CardLevel, list[Card]]
-    open: dict[CardLevel, list[Card]]
+    open: dict[CardLevel, list[Card | None]]

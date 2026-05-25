@@ -759,6 +759,10 @@
     font-family: var(--font-display);
   }
 
+  .splendor-player-seat__reserved {
+    @apply text-muted-foreground text-xs font-medium;
+  }
+
   .splendor-player-seat__gems {
     @apply mt-1 flex min-h-5 flex-wrap items-center justify-center gap-1.5;
   }

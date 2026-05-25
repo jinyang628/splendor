@@ -1,10 +1,15 @@
+import uuid
+
 import httpx
 
-from app.models.base import MAX_PLAYER_GEMS, FetchGameDataResponse
+from app.models.base import (MAX_PLAYER_GEMS, FetchGameDataResponse,
+                             ReserveCardSource)
 from app.models.games import (PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel,
                               GemColor)
 from app.services.database import DatabaseService
-from app.services.utils import instantiate_game_cards, serialize_cards_by_level
+from app.services.utils import (deserialize_cards_by_level,
+                                instantiate_game_cards, reserve_closed_card,
+                                reserve_open_card, serialize_cards_by_level)
 from app.utils.errors import (InvalidDatabaseEntryError, InvalidGameLogicError,
                               RoomNotFoundError)
 from app.utils.rooms import generate_nicknames
@@ -17,10 +22,13 @@ TAKEABLE_GEM_COLORS = [
     GemColor.WHITE,
 ]
 
+
 class GamesService:
     async def fetch_game_data(self, game_id: str) -> FetchGameDataResponse:
         client = await DatabaseService().get_client()
-        game_response = await client.table("games").select("turn").eq("id", game_id).execute()
+        game_response = (
+            await client.table("games").select("turn").eq("id", game_id).execute()
+        )
         if (
             not game_response.data
             or not isinstance(game_response.data, list)
@@ -43,6 +51,7 @@ class GamesService:
                 "red",
                 "white",
                 "gold",
+                "reserved",
             )
             .eq("game_id", game_id)
             .execute()
@@ -58,6 +67,7 @@ class GamesService:
         order: dict[str, int] = {}
         nicknames: dict[str, str] = {}
         gems_owned: dict[str, dict[GemColor, int]] = {}
+        reserved: dict[str, list[Card]] = {}
         for player_info in response.data:
             gems_owned_by_player: dict[GemColor, int] = {}
             for gem_color in GemColor:
@@ -65,6 +75,10 @@ class GamesService:
             gems_owned[player_info["id"]] = gems_owned_by_player
             order[player_info["id"]] = player_info["order"]
             nicknames[player_info["id"]] = player_info["nickname"]
+            reserved[player_info["id"]] = [
+                card if isinstance(card, Card) else Card.model_validate(card)
+                for card in (player_info.get("reserved") or [])
+            ]
         gems_available: dict[GemColor, int] = {}
         response = (
             await client.table("gems")
@@ -101,10 +115,10 @@ class GamesService:
                 detail="Game not found",
             )
         card_info = response.data[0]
-        closed_cards: dict[CardLevel, list[Card]] = (
+        closed_cards: dict[CardLevel, list[Card | None]] = (
             card_info.get("closed") if isinstance(card_info, dict) else None
         )
-        open_cards: dict[CardLevel, list[Card]] = (
+        open_cards: dict[CardLevel, list[Card | None]] = (
             card_info.get("open") if isinstance(card_info, dict) else None
         )
         if not closed_cards or not open_cards:
@@ -112,12 +126,15 @@ class GamesService:
                 status_code=httpx.codes.INTERNAL_SERVER_ERROR,
                 detail="Card information is missing from database",
             )
+        closed_cards = deserialize_cards_by_level(closed_cards)
+        open_cards = deserialize_cards_by_level(open_cards)
         return FetchGameDataResponse(
             turn=turn,
             order=order,
             nicknames=nicknames,
             gems_available=gems_available,
             gems_owned=gems_owned,
+            reserved=reserved,
             closed=closed_cards,
             open=open_cards,
         )
@@ -183,7 +200,8 @@ class GamesService:
             for gem_color in GemColor
         }
         updated_player_gems = {
-            gem_color.value: current_player_gems[gem_color] + normalized_selection[gem_color]
+            gem_color.value: current_player_gems[gem_color]
+            + normalized_selection[gem_color]
             for gem_color in GemColor
         }
 
@@ -228,7 +246,9 @@ class GamesService:
                 detail="Player not found",
             )
         player_info = player_response.data[0]
-        player_gems = {gem_color: player_info[gem_color.value] for gem_color in GemColor}
+        player_gems = {
+            gem_color: player_info[gem_color.value] for gem_color in GemColor
+        }
         current_total = sum(player_gems.values())
         await self._validate_player_turn(
             game_id=game_id,
@@ -294,12 +314,148 @@ class GamesService:
 
         return await self.fetch_game_data(game_id=game_id)
 
+    async def reserve_card(
+        self,
+        game_id: str,
+        player_id: str,
+        source: ReserveCardSource,
+        card_id: str | None,
+        level: CardLevel | None,
+    ) -> FetchGameDataResponse:
+        client = await DatabaseService().get_client()
+
+        player_response = (
+            await client.table("players")
+            .select(
+                "order", "blue", "black", "green", "red", "white", "gold", "reserved"
+            )
+            .eq("game_id", game_id)
+            .eq("id", player_id)
+            .execute()
+        )
+        if not player_response.data or not isinstance(player_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Player not found",
+            )
+
+        player_info = player_response.data[0]
+        player_gems = {
+            gem_color: player_info[gem_color.value] for gem_color in GemColor
+        }
+        await self._validate_player_turn(
+            game_id=game_id,
+            player_id=player_id,
+            player_order=player_info["order"],
+        )
+
+        if sum(player_gems.values()) > MAX_PLAYER_GEMS:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.BAD_REQUEST,
+                detail="Discard gems down to 10 before reserving a card",
+            )
+
+        cards_response = (
+            await client.table("cards")
+            .select("open", "closed")
+            .eq("game_id", game_id)
+            .execute()
+        )
+        if not cards_response.data or not isinstance(cards_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Cards not found",
+            )
+        card_info = cards_response.data[0]
+        closed_cards = deserialize_cards_by_level(card_info["closed"])
+        open_cards = deserialize_cards_by_level(card_info["open"])
+
+        if source == ReserveCardSource.CLOSED:
+            if level is None:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail="Select a card level to reserve from the closed deck",
+                )
+            closed_cards, reserved_card = reserve_closed_card(level, closed_cards)
+        else:
+            if card_id is None:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail="Select an open card to reserve",
+                )
+            try:
+                card_uuid = uuid.UUID(card_id)
+            except ValueError as error:
+                raise InvalidGameLogicError(
+                    status_code=httpx.codes.BAD_REQUEST,
+                    detail="Card id must be a valid UUID",
+                ) from error
+            closed_cards, open_cards, reserved_card = reserve_open_card(
+                card_uuid=card_uuid,
+                open_cards=open_cards,
+                closed_cards=closed_cards,
+            )
+
+        gems_response = (
+            await client.table("gems")
+            .select("blue", "black", "green", "red", "white", "gold")
+            .eq("game_id", game_id)
+            .execute()
+        )
+        if not gems_response.data or not isinstance(gems_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Gems not found",
+            )
+        gems_info = gems_response.data[0]
+        gems_available = {gem_color: gems_info[gem_color] for gem_color in GemColor}
+
+        gold_drawn = 1 if gems_available[GemColor.GOLD] > 0 else 0
+        updated_player_gems = {
+            gem_color.value: player_gems[gem_color]
+            + (gold_drawn if gem_color == GemColor.GOLD else 0)
+            for gem_color in GemColor
+        }
+        updated_gems_available = {
+            gem_color.value: gems_available[gem_color]
+            - (gold_drawn if gem_color == GemColor.GOLD else 0)
+            for gem_color in GemColor
+        }
+        reserved_cards: list[Card] = [
+            Card.model_validate(card) for card in (player_info.get("reserved") or [])
+        ]
+        reserved_cards.append(reserved_card)
+
+        await client.table("cards").update(
+            {
+                "closed": serialize_cards_by_level(closed_cards),
+                "open": serialize_cards_by_level(open_cards),
+            }
+        ).eq("game_id", game_id).execute()
+        await client.table("gems").update(updated_gems_available).eq(
+            "game_id", game_id
+        ).execute()
+        await client.table("players").update(
+            {
+                **updated_player_gems,
+                "reserved": [card.model_dump(mode="json") for card in reserved_cards],
+            }
+        ).eq("game_id", game_id).eq("id", player_id).execute()
+
+        if sum(updated_player_gems.values()) <= MAX_PLAYER_GEMS:
+            await self._increment_turn(game_id=game_id)
+
+        return await self.fetch_game_data(game_id=game_id)
+
     async def _validate_player_turn(
         self, game_id: str, player_id: str, player_order: int
     ) -> None:
         client = await DatabaseService().get_client()
         players_response = (
-            await client.table("players").select("id", "order").eq("game_id", game_id).execute()
+            await client.table("players")
+            .select("id", "order")
+            .eq("game_id", game_id)
+            .execute()
         )
         if not players_response.data or not isinstance(players_response.data, list):
             raise InvalidDatabaseEntryError(
@@ -307,7 +463,9 @@ class GamesService:
                 detail="Players not found",
             )
 
-        game_response = await client.table("games").select("turn").eq("id", game_id).execute()
+        game_response = (
+            await client.table("games").select("turn").eq("id", game_id).execute()
+        )
         if (
             not game_response.data
             or not isinstance(game_response.data, list)
@@ -318,10 +476,15 @@ class GamesService:
                 detail="Game not found",
             )
 
-        players_in_order = sorted(players_response.data, key=lambda player: player["order"])
+        players_in_order = sorted(
+            players_response.data, key=lambda player: player["order"]
+        )
         turn_index = (game_response.data[0]["turn"] - 1) % len(players_in_order)
         current_turn_player = players_in_order[turn_index]
-        if player_id != current_turn_player["id"] or player_order != current_turn_player["order"]:
+        if (
+            player_id != current_turn_player["id"]
+            or player_order != current_turn_player["order"]
+        ):
             raise InvalidGameLogicError(
                 status_code=httpx.codes.FORBIDDEN,
                 detail="It is not this player's turn",
@@ -329,7 +492,9 @@ class GamesService:
 
     async def _increment_turn(self, game_id: str) -> None:
         client = await DatabaseService().get_client()
-        game_response = await client.table("games").select("turn").eq("id", game_id).execute()
+        game_response = (
+            await client.table("games").select("turn").eq("id", game_id).execute()
+        )
         if (
             not game_response.data
             or not isinstance(game_response.data, list)
@@ -339,11 +504,13 @@ class GamesService:
                 status_code=httpx.codes.NOT_FOUND,
                 detail="Game not found",
             )
-        await client.table("games").update({"turn": game_response.data[0]["turn"] + 1}).eq(
-            "id", game_id
-        ).execute()
+        await client.table("games").update(
+            {"turn": game_response.data[0]["turn"] + 1}
+        ).eq("id", game_id).execute()
 
-    def _normalize_gem_counts(self, gem_counts: dict[GemColor, int]) -> dict[GemColor, int]:
+    def _normalize_gem_counts(
+        self, gem_counts: dict[GemColor, int]
+    ) -> dict[GemColor, int]:
         normalized_counts = {
             gem_color: gem_counts.get(gem_color, 0) for gem_color in GemColor
         }
@@ -467,6 +634,7 @@ class GamesService:
                     "game_id": game_id,
                     "nickname": nicknames[player_id],
                     "order": idx + 1,
+                    "reserved": [],
                 }
                 for idx, player_id in enumerate(sorted_all_player_ids)
             ]

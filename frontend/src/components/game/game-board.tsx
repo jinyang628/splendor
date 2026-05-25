@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { discardGems } from '@/actions/games/discardGems';
+import { reserveCard } from '@/actions/games/reserveCard';
 import { takeGems } from '@/actions/games/takeGems';
 import { toast } from 'sonner';
 
@@ -19,7 +20,7 @@ import {
   type GemColor,
   type GemCounts,
 } from '@/types/cards';
-import type { FetchGameDataResponse } from '@/types/games';
+import type { FetchGameDataResponse, GameCard } from '@/types/games';
 
 import { BOARD_LEVELS, getCurrentTurnPlayerId, getPlayersInOrder } from '@/lib/games';
 
@@ -79,6 +80,7 @@ export default function GameBoard({
   const [selectedDiscards, setSelectedDiscards] = useState<GemCounts>(EMPTY_GEM_COUNTS);
   const [isTakingGems, setIsTakingGems] = useState(false);
   const [isDiscardingGems, setIsDiscardingGems] = useState(false);
+  const [isReservingCard, setIsReservingCard] = useState(false);
   const currentTurnPlayerId = getCurrentTurnPlayerId(gameData);
   const isCurrentUserTurn = Boolean(currentPlayerId && currentPlayerId === currentTurnPlayerId);
   const currentPlayerGems = currentPlayerId ? gameData.gems_owned[currentPlayerId] : undefined;
@@ -224,6 +226,70 @@ export default function GameBoard({
     }
   };
 
+  const canReserveCard = () =>
+    Boolean(
+      currentPlayerId &&
+        isCurrentUserTurn &&
+        !mustDiscard &&
+        !isTakingGems &&
+        !isDiscardingGems &&
+        !isReservingCard,
+    );
+
+  const handleReserveOpenCard = async (card: GameCard) => {
+    if (!currentPlayerId || !canReserveCard()) return;
+
+    setIsReservingCard(true);
+    try {
+      const updatedGameData = await reserveCard({
+        game_id: gameId,
+        player_id: currentPlayerId,
+        source: 'open',
+        card_id: card.id,
+      });
+      onGameDataChange(updatedGameData);
+      handleClearSelection();
+      const updatedPlayerTotal = getGemTotal(updatedGameData.gems_owned[currentPlayerId]);
+      if (updatedPlayerTotal > 10) {
+        toast.info(`Card reserved. Discard ${updatedPlayerTotal - 10} to get back to 10.`);
+      } else {
+        toast.success('Card reserved');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not reserve card');
+    } finally {
+      setIsReservingCard(false);
+    }
+  };
+
+  const handleReserveClosedCard = async (level: number) => {
+    if (!currentPlayerId || !canReserveCard()) return;
+
+    setIsReservingCard(true);
+    try {
+      const updatedGameData = await reserveCard({
+        game_id: gameId,
+        player_id: currentPlayerId,
+        source: 'closed',
+        level: level as 1 | 2 | 3,
+      });
+      onGameDataChange(updatedGameData);
+      handleClearSelection();
+      const updatedPlayerTotal = getGemTotal(updatedGameData.gems_owned[currentPlayerId]);
+      if (updatedPlayerTotal > 10) {
+        toast.info(`Card reserved. Discard ${updatedPlayerTotal - 10} to get back to 10.`);
+      } else {
+        toast.success('Card reserved');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not reserve card');
+    } finally {
+      setIsReservingCard(false);
+    }
+  };
+
   return (
     <div className="splendor-game-board">
       <p className="splendor-turn-status">
@@ -242,6 +308,7 @@ export default function GameBoard({
         getGemDisabled={(color) =>
           isTakingGems ||
           isDiscardingGems ||
+          isReservingCard ||
           mustDiscard ||
           !currentPlayerId ||
           !isCurrentUserTurn ||
@@ -377,6 +444,9 @@ export default function GameBoard({
             level={level}
             closedCards={gameData.closed[level] ?? []}
             openCards={gameData.open[level] ?? []}
+            isInteractionDisabled={!canReserveCard()}
+            onDeckClick={() => handleReserveClosedCard(Number(level))}
+            onOpenCardClick={handleReserveOpenCard}
           />
         ))}
       </div>

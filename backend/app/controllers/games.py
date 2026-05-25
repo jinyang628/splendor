@@ -4,12 +4,9 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 
-from app.models.base import (
-    DiscardGemsRequest,
-    FetchGameDataResponse,
-    InitializeRequest,
-    TakeGemsRequest,
-)
+from app.models.base import (DiscardGemsRequest, FetchGameDataResponse,
+                             InitializeRequest, ReserveCardRequest,
+                             TakeGemsRequest)
 from app.services.games import GamesService
 
 log = logging.getLogger(__name__)
@@ -123,6 +120,48 @@ class GamesController:
                 return JSONResponse(
                     content={
                         "message": "Error discarding gems",
+                        "game_id": input.game_id,
+                    },
+                    status_code=httpx.codes.INTERNAL_SERVER_ERROR,
+                )
+
+        @router.post("/cards/reserve", response_model=FetchGameDataResponse)
+        async def reserve_card(input: ReserveCardRequest) -> FetchGameDataResponse:
+            try:
+                log.info(
+                    "Reserving %s card for game %s and player %s",
+                    input.source,
+                    input.game_id,
+                    input.player_id,
+                )
+                return await self.service.reserve_card(
+                    game_id=input.game_id,
+                    player_id=input.player_id,
+                    source=input.source,
+                    card_id=input.card_id,
+                    level=input.level,
+                )
+            except HTTPException as e:
+                log.warning(
+                    "Invalid reserve card request for game %s and player %s: %s",
+                    input.game_id,
+                    input.player_id,
+                    e.detail,
+                )
+                return JSONResponse(
+                    content={"message": e.detail},
+                    status_code=e.status_code,
+                )
+            except Exception as e:
+                log.exception(
+                    "Error reserving card for game %s and player %s: %s",
+                    input.game_id,
+                    input.player_id,
+                    e,
+                )
+                return JSONResponse(
+                    content={
+                        "message": "Error reserving card",
                         "game_id": input.game_id,
                     },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,

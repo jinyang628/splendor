@@ -10,9 +10,10 @@ const OPEN_SLOTS = 4;
 type CardRowProps = {
   level: BoardLevel;
   closedCards: GameCard[];
-  openCards: GameCard[];
+  openCards: (GameCard | null)[];
   onDeckClick?: () => void;
   onOpenCardClick?: (card: GameCard) => void;
+  isInteractionDisabled?: boolean;
 };
 
 export default function CardRow({
@@ -21,6 +22,7 @@ export default function CardRow({
   openCards,
   onDeckClick,
   onOpenCardClick,
+  isInteractionDisabled,
 }: CardRowProps) {
   const levelNumber = Number(level);
   const slots = Array.from({ length: OPEN_SLOTS }, (_, index) => openCards[index] ?? null);
@@ -28,7 +30,12 @@ export default function CardRow({
   return (
     <div className="splendor-card-row" role="row" aria-label={`Level ${levelNumber} cards`}>
       <div className="splendor-card-row__cell" role="cell">
-        <ClosedDeck level={levelNumber} remaining={closedCards.length} onClick={onDeckClick} />
+        <ClosedDeck
+          level={levelNumber}
+          remaining={closedCards.length}
+          onClick={onDeckClick}
+          disabled={isInteractionDisabled}
+        />
       </div>
       {slots.map((card, index) => (
         <div
@@ -39,7 +46,9 @@ export default function CardRow({
           {card ? (
             <GameCardView
               card={card}
-              onClick={onOpenCardClick ? () => onOpenCardClick(card) : undefined}
+              onClick={
+                onOpenCardClick && !isInteractionDisabled ? () => onOpenCardClick(card) : undefined
+              }
             />
           ) : (
             <div className="splendor-card-slot" aria-hidden />

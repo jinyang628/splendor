@@ -1,11 +1,12 @@
 import type { GemCounts } from '@/types/cards';
-import type { FetchGameDataResponse } from '@/types/games';
+import type { FetchGameDataResponse, GameCard } from '@/types/games';
 
 export type PlayerInOrder = {
   playerId: string;
   position: number;
   nickname: string;
   gemsOwned: GemCounts;
+  reservedCards: GameCard[];
 };
 
 /** Display rows top-to-bottom: level 3, then 2, then 1. */
@@ -20,6 +21,7 @@ export function getPlayersInOrder(data: FetchGameDataResponse): PlayerInOrder[] 
       position,
       nickname: data.nicknames[playerId],
       gemsOwned: data.gems_owned[playerId],
+      reservedCards: data.reserved[playerId] ?? [],
     }));
 }
 

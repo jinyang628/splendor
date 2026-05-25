@@ -18,7 +18,7 @@ export default function PlayerBar({
 }: PlayerBarProps) {
   return (
     <ul className="splendor-player-bar" aria-label="Players in turn order">
-      {players.map(({ playerId, position, nickname, gemsOwned }) => {
+      {players.map(({ playerId, position, nickname, gemsOwned, reservedCards }) => {
         const isCurrentUser = playerId === currentPlayerId;
         const isCurrentTurn = playerId === currentTurnPlayerId;
         const ownedGems = GEM_COLORS.map((color) => ({
@@ -42,6 +42,9 @@ export default function PlayerBar({
               {isCurrentTurn ? (
                 <span className="splendor-player-seat__badge">Player Turn</span>
               ) : null}
+              <span className="splendor-player-seat__reserved">
+                Reserved {reservedCards.length}
+              </span>
               <div className="splendor-player-seat__gems" aria-label={`${nickname}'s owned gems`}>
                 {ownedGems.map(({ color, count }) => (
                   <span key={color} className="splendor-player-seat__gem">
