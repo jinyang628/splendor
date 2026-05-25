@@ -87,34 +87,3 @@ class RoomsController:
                     },
                     status_code=httpx.codes.INTERNAL_SERVER_ERROR,
                 )
-
-        # @router.get(
-        #     "/player-number",
-        #     response_model=GetPlayerNumberResponse,
-        # )
-        # async def get_player_number(
-        #     game_id: str, user_id: str
-        # ) -> GetPlayerNumberResponse:
-        # try:
-        #     log.info("Getting player number for game %s", game_id)
-        #     response = await self.service.get_player_number(
-        #         game_id=game_id, player_id=player_id
-        #     )
-        #     log.info("Player number got successfully for game %s", game_id)
-        #     return response
-        # except HTTPException as e:
-        #     log.exception(e.detail)
-        #     return GetPlayerNumberResponse(
-        #         status_code=e.status_code,
-        #         is_player_one=None,
-        #     )
-        # except Exception as e:
-        #     log.exception(
-        #         "Unexpected error occurred while trying to get player number for game %s: %s",
-        #         game_id,
-        #         e,
-        #     )
-        #     return GetPlayerNumberResponse(
-        #         status_code=httpx.codes.INTERNAL_SERVER_ERROR,
-        #         is_player_one=None,
-        #     )

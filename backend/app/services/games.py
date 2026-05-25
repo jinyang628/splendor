@@ -800,6 +800,13 @@ class GamesService:
                     "game_id": game_id,
                     "nickname": nicknames[player_id],
                     "order": idx + 1,
+                    "gems": None,
+                    "blue": 0,
+                    "black": 0,
+                    "green": 0,
+                    "red": 0,
+                    "white": 0,
+                    "gold": 0,
                     "reserved": [],
                     "purchased": [],
                 }
