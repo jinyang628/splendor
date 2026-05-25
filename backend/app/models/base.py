@@ -43,6 +43,12 @@ class ReserveCardRequest(BaseModel):
     level: CardLevel | None = None
 
 
+class BuyCardRequest(BaseModel):
+    game_id: str
+    player_id: str
+    card_id: str
+
+
 class FetchGameDataResponse(BaseModel):
     turn: int
     order: dict[str, int]
@@ -50,5 +56,6 @@ class FetchGameDataResponse(BaseModel):
     gems_available: dict[GemColor, int]
     gems_owned: dict[str, dict[GemColor, int]]
     reserved: dict[str, list[Card]]
+    purchased: dict[str, list[Card]]
     closed: dict[CardLevel, list[Card]]
     open: dict[CardLevel, list[Card | None]]

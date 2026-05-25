@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { buyCard } from '@/actions/games/buyCard';
 import { discardGems } from '@/actions/games/discardGems';
 import { reserveCard } from '@/actions/games/reserveCard';
 import { takeGems } from '@/actions/games/takeGems';
 import { toast } from 'sonner';
 
+import CardActionMenu from '@/components/game/card-action-menu';
 import CardRow from '@/components/game/card-row';
 import GemBank from '@/components/game/gem-bank';
 import PlayerBar from '@/components/game/player-bar';
@@ -30,6 +32,8 @@ type GameBoardProps = {
   currentPlayerId: string | null;
   onGameDataChange: (gameData: FetchGameDataResponse) => void;
 };
+
+type ActiveCardMenu = { type: 'open'; cardId: string } | { type: 'closed'; level: number } | null;
 
 const EMPTY_GEM_COUNTS: GemCounts = {
   black: 0,
@@ -81,6 +85,8 @@ export default function GameBoard({
   const [isTakingGems, setIsTakingGems] = useState(false);
   const [isDiscardingGems, setIsDiscardingGems] = useState(false);
   const [isReservingCard, setIsReservingCard] = useState(false);
+  const [isBuyingCard, setIsBuyingCard] = useState(false);
+  const [activeCardMenu, setActiveCardMenu] = useState<ActiveCardMenu>(null);
   const currentTurnPlayerId = getCurrentTurnPlayerId(gameData);
   const isCurrentUserTurn = Boolean(currentPlayerId && currentPlayerId === currentTurnPlayerId);
   const currentPlayerGems = currentPlayerId ? gameData.gems_owned[currentPlayerId] : undefined;
@@ -107,6 +113,17 @@ export default function GameBoard({
   );
   const selectedDiscardTotal = getSelectedTotal(selectedDiscards);
 
+  const currentPlayerPermanentColors = useMemo(() => {
+    const purchasedCards = currentPlayerId ? (gameData.purchased[currentPlayerId] ?? []) : [];
+    return CARD_COLORS.reduce(
+      (counts, color) => ({
+        ...counts,
+        [color]: purchasedCards.filter((card) => card.color === color).length,
+      }),
+      { ...EMPTY_GEM_COUNTS },
+    );
+  }, [currentPlayerId, gameData.purchased]);
+
   useEffect(() => {
     if (!mustDiscard) {
       setSelectedDiscards({ ...EMPTY_GEM_COUNTS });
@@ -119,6 +136,7 @@ export default function GameBoard({
     if (!isCurrentUserTurn) {
       setSelectedGems({ ...EMPTY_GEM_COUNTS });
       setSelectedDiscards({ ...EMPTY_GEM_COUNTS });
+      setActiveCardMenu(null);
     }
   }, [isCurrentUserTurn]);
 
@@ -233,8 +251,22 @@ export default function GameBoard({
         !mustDiscard &&
         !isTakingGems &&
         !isDiscardingGems &&
-        !isReservingCard,
+        !isReservingCard &&
+        !isBuyingCard,
     );
+
+  const canBuyCard = (card: GameCard) => {
+    if (!currentPlayerGems || !canReserveCard()) return false;
+
+    let goldNeeded = 0;
+    for (const color of CARD_COLORS) {
+      const discountedCost = Math.max(0, card[color] - currentPlayerPermanentColors[color]);
+      const normalPayment = Math.min(currentPlayerGems[color], discountedCost);
+      goldNeeded += discountedCost - normalPayment;
+    }
+
+    return goldNeeded <= currentPlayerGems.gold;
+  };
 
   const handleReserveOpenCard = async (card: GameCard) => {
     if (!currentPlayerId || !canReserveCard()) return;
@@ -249,6 +281,7 @@ export default function GameBoard({
       });
       onGameDataChange(updatedGameData);
       handleClearSelection();
+      setActiveCardMenu(null);
       const updatedPlayerTotal = getGemTotal(updatedGameData.gems_owned[currentPlayerId]);
       if (updatedPlayerTotal > 10) {
         toast.info(`Card reserved. Discard ${updatedPlayerTotal - 10} to get back to 10.`);
@@ -276,6 +309,7 @@ export default function GameBoard({
       });
       onGameDataChange(updatedGameData);
       handleClearSelection();
+      setActiveCardMenu(null);
       const updatedPlayerTotal = getGemTotal(updatedGameData.gems_owned[currentPlayerId]);
       if (updatedPlayerTotal > 10) {
         toast.info(`Card reserved. Discard ${updatedPlayerTotal - 10} to get back to 10.`);
@@ -287,6 +321,28 @@ export default function GameBoard({
       toast.error('Could not reserve card');
     } finally {
       setIsReservingCard(false);
+    }
+  };
+
+  const handleBuyOpenCard = async (card: GameCard) => {
+    if (!currentPlayerId || !canBuyCard(card)) return;
+
+    setIsBuyingCard(true);
+    try {
+      const updatedGameData = await buyCard({
+        game_id: gameId,
+        player_id: currentPlayerId,
+        card_id: card.id,
+      });
+      onGameDataChange(updatedGameData);
+      handleClearSelection();
+      setActiveCardMenu(null);
+      toast.success('Card bought');
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not buy card');
+    } finally {
+      setIsBuyingCard(false);
     }
   };
 
@@ -309,6 +365,7 @@ export default function GameBoard({
           isTakingGems ||
           isDiscardingGems ||
           isReservingCard ||
+          isBuyingCard ||
           mustDiscard ||
           !currentPlayerId ||
           !isCurrentUserTurn ||
@@ -356,6 +413,7 @@ export default function GameBoard({
               !isCurrentUserTurn ||
               selectedTotal === 0 ||
               isTakingGems ||
+              isBuyingCard ||
               mustDiscard
             }
             onClick={handleTakeGems}
@@ -445,8 +503,30 @@ export default function GameBoard({
             closedCards={gameData.closed[level] ?? []}
             openCards={gameData.open[level] ?? []}
             isInteractionDisabled={!canReserveCard()}
-            onDeckClick={() => handleReserveClosedCard(Number(level))}
-            onOpenCardClick={handleReserveOpenCard}
+            onDeckClick={() => setActiveCardMenu({ type: 'closed', level: Number(level) })}
+            onOpenCardClick={(card) => setActiveCardMenu({ type: 'open', cardId: card.id })}
+            renderDeckMenu={() =>
+              activeCardMenu?.type === 'closed' && activeCardMenu.level === Number(level) ? (
+                <CardActionMenu
+                  title={`Level ${Number(level)} deck`}
+                  isBusy={isReservingCard || isBuyingCard}
+                  onReserve={() => handleReserveClosedCard(Number(level))}
+                  onClose={() => setActiveCardMenu(null)}
+                />
+              ) : null
+            }
+            renderOpenCardMenu={(card) =>
+              activeCardMenu?.type === 'open' && activeCardMenu.cardId === card.id ? (
+                <CardActionMenu
+                  title="Open card"
+                  canBuy={canBuyCard(card)}
+                  isBusy={isReservingCard || isBuyingCard}
+                  onBuy={() => handleBuyOpenCard(card)}
+                  onReserve={() => handleReserveOpenCard(card)}
+                  onClose={() => setActiveCardMenu(null)}
+                />
+              ) : null
+            }
           />
         ))}
       </div>

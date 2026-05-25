@@ -49,6 +49,14 @@ export const reserveCardRequestSchema = z
 
 export type ReserveCardRequest = z.infer<typeof reserveCardRequestSchema>;
 
+export const buyCardRequestSchema = z.object({
+  game_id: z.string(),
+  player_id: z.string(),
+  card_id: z.string().uuid(),
+});
+
+export type BuyCardRequest = z.infer<typeof buyCardRequestSchema>;
+
 export const gameCardSchema = gemCountsSchema.extend({
   id: z.string().uuid(),
   color: cardColorSchema,
@@ -70,6 +78,7 @@ export const fetchGameDataResponseSchema = z.object({
   gems_available: gemCountsSchema,
   gems_owned: z.record(z.string(), gemCountsSchema),
   reserved: z.record(z.string(), z.array(gameCardSchema)),
+  purchased: z.record(z.string(), z.array(gameCardSchema)),
   closed: cardsByLevelSchema,
   open: openCardsByLevelSchema,
 });

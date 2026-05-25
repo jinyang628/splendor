@@ -110,3 +110,32 @@ def reserve_open_card(
         )
 
     return closed_cards, open_cards, reserved_card
+
+
+def take_open_card(
+    card_uuid: uuid.UUID,
+    open_cards: dict[CardLevel, list[Card | None]],
+    closed_cards: dict[CardLevel, list[Card | None]],
+) -> tuple[dict[CardLevel, list[Card]], dict[CardLevel, list[Card | None]], Card]:
+    """Removes an open card, replacing it with the top card from the matching closed deck."""
+    bought_card: Card | None = None
+    for level, cards in open_cards.items():
+        for card in cards:
+            if card is None:
+                continue
+            if card.id != card_uuid:
+                continue
+            index: int = cards.index(card)
+            bought_card = card
+            if not closed_cards[level]:
+                open_cards[level][index] = None
+            else:
+                open_cards[level][index] = closed_cards[level].pop()
+
+    if not bought_card:
+        raise InvalidGameLogicError(
+            status_code=400,
+            detail=f"No open card found with UUID {card_uuid}",
+        )
+
+    return closed_cards, open_cards, bought_card

@@ -7,6 +7,7 @@ export type PlayerInOrder = {
   nickname: string;
   gemsOwned: GemCounts;
   reservedCards: GameCard[];
+  purchasedCards: GameCard[];
 };
 
 /** Display rows top-to-bottom: level 3, then 2, then 1. */
@@ -22,6 +23,7 @@ export function getPlayersInOrder(data: FetchGameDataResponse): PlayerInOrder[] 
       nickname: data.nicknames[playerId],
       gemsOwned: data.gems_owned[playerId],
       reservedCards: data.reserved[playerId] ?? [],
+      purchasedCards: data.purchased[playerId] ?? [],
     }));
 }
 

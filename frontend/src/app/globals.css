@@ -759,12 +759,53 @@
     font-family: var(--font-display);
   }
 
-  .splendor-player-seat__reserved {
-    @apply text-muted-foreground text-xs font-medium;
+  .splendor-player-seat__resources {
+    @apply mt-2 grid grid-cols-6 gap-x-1.5 gap-y-1;
   }
 
-  .splendor-player-seat__gems {
-    @apply mt-1 flex min-h-5 flex-wrap items-center justify-center gap-1.5;
+  .splendor-player-seat__resource-column {
+    @apply grid justify-items-center gap-1;
+    grid-template-rows: 1.35rem 1.25rem;
+  }
+
+  .splendor-player-seat__card-count {
+    @apply border-border/60 bg-card/70 flex h-5 w-6 items-center justify-center rounded-sm border text-[0.65rem] font-bold tabular-nums shadow-sm ring-1 ring-black/5;
+  }
+
+  .splendor-player-seat__card-count[data-gem='black'] {
+    background-color: color-mix(in oklch, var(--gem-black) 70%, var(--card));
+    color: var(--gem-black-fg);
+    border-color: var(--gem-black-ring);
+  }
+
+  .splendor-player-seat__card-count[data-gem='blue'] {
+    background-color: color-mix(in oklch, var(--gem-blue) 78%, var(--card));
+    color: var(--gem-blue-fg);
+    border-color: var(--gem-blue-ring);
+  }
+
+  .splendor-player-seat__card-count[data-gem='white'] {
+    background-color: color-mix(in oklch, var(--gem-white) 86%, var(--card));
+    color: var(--gem-white-fg);
+    border-color: var(--gem-white-ring);
+  }
+
+  .splendor-player-seat__card-count[data-gem='green'] {
+    background-color: color-mix(in oklch, var(--gem-green) 78%, var(--card));
+    color: var(--gem-green-fg);
+    border-color: var(--gem-green-ring);
+  }
+
+  .splendor-player-seat__card-count[data-gem='red'] {
+    background-color: color-mix(in oklch, var(--gem-red) 78%, var(--card));
+    color: var(--gem-red-fg);
+    border-color: var(--gem-red-ring);
+  }
+
+  .splendor-player-seat__card-count--reserved {
+    background-color: color-mix(in oklch, var(--splendor-gold) 18%, var(--card));
+    color: var(--splendor-gold);
+    border-color: color-mix(in oklch, var(--splendor-gold) 60%, var(--border));
   }
 
   .splendor-player-seat__gem {
@@ -784,7 +825,7 @@
   }
 
   .splendor-card-row__cell {
-    @apply flex shrink-0 items-center justify-center;
+    @apply relative flex shrink-0 items-center justify-center;
   }
 
   .splendor-card-slot {
@@ -823,6 +864,18 @@
 
   .splendor-deck__count {
     @apply text-muted-foreground relative z-10 mt-1 text-xs font-medium tabular-nums;
+  }
+
+  .splendor-card-action-menu {
+    @apply bg-popover text-popover-foreground border-border absolute top-full left-1/2 z-30 mt-2 flex w-36 -translate-x-1/2 flex-col gap-2 rounded-md border p-2 shadow-lg;
+  }
+
+  .splendor-card-action-menu__title {
+    @apply text-muted-foreground px-1 text-xs font-medium;
+  }
+
+  .splendor-card-action-menu__actions {
+    @apply flex flex-col gap-1.5;
   }
 
   .splendor-game-panel {

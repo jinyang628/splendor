@@ -1,9 +1,18 @@
 import GemChip from '@/components/shared/game/gem-chip';
 
-import { GEM_COLORS } from '@/types/cards';
+import type { CardColor, GemColor } from '@/types/cards';
 
 import type { PlayerInOrder } from '@/lib/games';
 import { cn } from '@/lib/utils';
+
+const RESOURCE_TRACK_COLORS = [
+  'white',
+  'blue',
+  'green',
+  'red',
+  'black',
+  'gold',
+] as const satisfies readonly GemColor[];
 
 type PlayerBarProps = {
   players: PlayerInOrder[];
@@ -18,13 +27,11 @@ export default function PlayerBar({
 }: PlayerBarProps) {
   return (
     <ul className="splendor-player-bar" aria-label="Players in turn order">
-      {players.map(({ playerId, position, nickname, gemsOwned, reservedCards }) => {
+      {players.map(({ playerId, position, nickname, gemsOwned, reservedCards, purchasedCards }) => {
         const isCurrentUser = playerId === currentPlayerId;
         const isCurrentTurn = playerId === currentTurnPlayerId;
-        const ownedGems = GEM_COLORS.map((color) => ({
-          color,
-          count: gemsOwned[color],
-        }));
+        const getPermanentCount = (color: CardColor) =>
+          purchasedCards.filter((card) => card.color === color).length;
 
         return (
           <li key={playerId}>
@@ -42,18 +49,40 @@ export default function PlayerBar({
               {isCurrentTurn ? (
                 <span className="splendor-player-seat__badge">Player Turn</span>
               ) : null}
-              <span className="splendor-player-seat__reserved">
-                Reserved {reservedCards.length}
-              </span>
-              <div className="splendor-player-seat__gems" aria-label={`${nickname}'s owned gems`}>
-                {ownedGems.map(({ color, count }) => (
-                  <span key={color} className="splendor-player-seat__gem">
-                    <GemChip color={color} count={count} />
-                    <span className="sr-only">
-                      {count} {color} {count === 1 ? 'gem' : 'gems'}
-                    </span>
-                  </span>
-                ))}
+              <div
+                className="splendor-player-seat__resources"
+                aria-label={`${nickname}'s cards and gems`}
+              >
+                {RESOURCE_TRACK_COLORS.map((color) => {
+                  const cardCount =
+                    color === 'gold' ? reservedCards.length : getPermanentCount(color);
+                  const cardLabel =
+                    color === 'gold'
+                      ? `${cardCount} reserved ${cardCount === 1 ? 'card' : 'cards'}`
+                      : `${cardCount} permanent ${color} ${cardCount === 1 ? 'card' : 'cards'}`;
+
+                  return (
+                    <div key={color} className="splendor-player-seat__resource-column">
+                      <span
+                        data-gem={color}
+                        className={cn(
+                          'splendor-player-seat__card-count',
+                          color === 'gold' && 'splendor-player-seat__card-count--reserved',
+                        )}
+                        aria-hidden
+                      >
+                        {cardCount > 0 ? cardCount : null}
+                      </span>
+                      <span className="sr-only">{cardLabel}</span>
+                      <span className="splendor-player-seat__gem">
+                        <GemChip color={color} count={gemsOwned[color]} />
+                        <span className="sr-only">
+                          {gemsOwned[color]} {color} {gemsOwned[color] === 1 ? 'gem' : 'gems'}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </li>

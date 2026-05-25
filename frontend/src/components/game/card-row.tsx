@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import ClosedDeck from '@/components/game/closed-deck';
 import GameCardView from '@/components/game/game-card';
 
@@ -14,6 +16,8 @@ type CardRowProps = {
   onDeckClick?: () => void;
   onOpenCardClick?: (card: GameCard) => void;
   isInteractionDisabled?: boolean;
+  renderDeckMenu?: () => ReactNode;
+  renderOpenCardMenu?: (card: GameCard) => ReactNode;
 };
 
 export default function CardRow({
@@ -23,6 +27,8 @@ export default function CardRow({
   onDeckClick,
   onOpenCardClick,
   isInteractionDisabled,
+  renderDeckMenu,
+  renderOpenCardMenu,
 }: CardRowProps) {
   const levelNumber = Number(level);
   const slots = Array.from({ length: OPEN_SLOTS }, (_, index) => openCards[index] ?? null);
@@ -36,6 +42,7 @@ export default function CardRow({
           onClick={onDeckClick}
           disabled={isInteractionDisabled}
         />
+        {renderDeckMenu?.()}
       </div>
       {slots.map((card, index) => (
         <div
@@ -44,12 +51,17 @@ export default function CardRow({
           role="cell"
         >
           {card ? (
-            <GameCardView
-              card={card}
-              onClick={
-                onOpenCardClick && !isInteractionDisabled ? () => onOpenCardClick(card) : undefined
-              }
-            />
+            <>
+              <GameCardView
+                card={card}
+                onClick={
+                  onOpenCardClick && !isInteractionDisabled
+                    ? () => onOpenCardClick(card)
+                    : undefined
+                }
+              />
+              {renderOpenCardMenu?.(card)}
+            </>
           ) : (
             <div className="splendor-card-slot" aria-hidden />
           )}
