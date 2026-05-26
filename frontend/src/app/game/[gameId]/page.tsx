@@ -27,17 +27,18 @@ export default function GamePage({ params }: GamePageProps) {
     let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const refreshGameData = async () => {
-      const data = await fetchGameData(gameId);
-      if (!cancelled) setGameData(data);
+      try {
+        const data = await fetchGameData(gameId);
+        if (!cancelled) setGameData(data);
+      } catch (error) {
+        if (!cancelled) toast.error('Failed to refresh game');
+        console.error(error);
+      }
     };
+
     const scheduleRefreshGameData = () => {
       if (refreshTimeout) clearTimeout(refreshTimeout);
-      refreshTimeout = setTimeout(() => {
-        refreshGameData().catch((error) => {
-          if (!cancelled) toast.error('Failed to refresh game');
-          console.error(error);
-        });
-      }, 120);
+      refreshTimeout = setTimeout(refreshGameData, 120);
     };
 
     (async () => {
@@ -64,30 +65,6 @@ export default function GamePage({ params }: GamePageProps) {
           schema: 'public',
           table: 'games',
           filter: `id=eq.${gameId}`,
-        },
-        (payload) => {
-          if (payload.old?.turn !== payload.new?.turn) {
-            scheduleRefreshGameData();
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'cards',
-          filter: `game_id=eq.${gameId}`,
-        },
-        scheduleRefreshGameData,
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'players',
-          filter: `game_id=eq.${gameId}`,
         },
         scheduleRefreshGameData,
       )
