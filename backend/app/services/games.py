@@ -5,12 +5,13 @@ import httpx
 from app.models.base import (MAX_PLAYER_GEMS, FetchGameDataResponse,
                              GameEndState, GameEndStatus, ReserveCardSource)
 from app.models.games import (PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel,
-                              GemColor)
+                              GemColor, Noble)
 from app.services.database import DatabaseService
-from app.services.utils import (deserialize_cards_by_level,
-                                instantiate_game_cards, reserve_closed_card,
+from app.services.utils import (deserialize_cards_by_level, deserialize_nobles,
+                                instantiate_game_cards,
+                                instantiate_game_nobles, reserve_closed_card,
                                 reserve_open_card, serialize_cards_by_level,
-                                take_open_card)
+                                serialize_nobles, take_open_card)
 from app.utils.errors import (InvalidDatabaseEntryError, InvalidGameLogicError,
                               RoomNotFoundError)
 from app.utils.rooms import generate_nicknames
@@ -62,6 +63,7 @@ class GamesService:
                 "gold",
                 "reserved",
                 "purchased",
+                "nobles",
             )
             .eq("game_id", game_id)
             .execute()
@@ -79,6 +81,7 @@ class GamesService:
         gems_owned: dict[str, dict[GemColor, int]] = {}
         reserved: dict[str, list[Card]] = {}
         purchased: dict[str, list[Card]] = {}
+        nobles_owned: dict[str, list[Noble]] = {}
         for player_info in response.data:
             gems_owned_by_player: dict[GemColor, int] = {}
             for gem_color in GemColor:
@@ -94,6 +97,9 @@ class GamesService:
                 card if isinstance(card, Card) else Card.model_validate(card)
                 for card in (player_info.get("purchased") or [])
             ]
+            nobles_owned[player_info["id"]] = deserialize_nobles(
+                player_info.get("nobles")
+            )
         gems_available: dict[GemColor, int] = {}
         response = (
             await client.table("gems")
@@ -116,7 +122,7 @@ class GamesService:
 
         response = (
             await client.table("cards")
-            .select("open", "closed")
+            .select("open", "closed", "nobles")
             .eq("game_id", game_id)
             .execute()
         )
@@ -143,6 +149,7 @@ class GamesService:
             )
         closed_cards = deserialize_cards_by_level(closed_cards)
         open_cards = deserialize_cards_by_level(open_cards)
+        nobles_available = deserialize_nobles(card_info.get("nobles"))
         return FetchGameDataResponse(
             turn=turn,
             endgame=self._build_endgame_state(
@@ -153,11 +160,14 @@ class GamesService:
                 endgame_started_on_turn=game_info.get("endgame_started_on_turn"),
                 order=order,
                 purchased=purchased,
+                nobles_owned=nobles_owned,
             ),
             order=order,
             nicknames=nicknames,
             gems_available=gems_available,
             gems_owned=gems_owned,
+            nobles_available=nobles_available,
+            nobles_owned=nobles_owned,
             reserved=reserved,
             purchased=purchased,
             closed=closed_cards,
@@ -492,6 +502,7 @@ class GamesService:
                 "gold",
                 "reserved",
                 "purchased",
+                "nobles",
             )
             .eq("game_id", game_id)
             .eq("id", player_id)
@@ -513,6 +524,7 @@ class GamesService:
         reserved_cards: list[Card] = [
             Card.model_validate(card) for card in (player_info.get("reserved") or [])
         ]
+        player_nobles = deserialize_nobles(player_info.get("nobles"))
 
         await self._validate_player_turn(
             game_id=game_id,
@@ -539,22 +551,22 @@ class GamesService:
         )
         is_reserved_card = bought_card is not None
 
-        cards_response = None
+        cards_response = (
+            await client.table("cards")
+            .select("open", "closed", "nobles")
+            .eq("game_id", game_id)
+            .execute()
+        )
+        if not cards_response.data or not isinstance(cards_response.data, list):
+            raise InvalidDatabaseEntryError(
+                status_code=httpx.codes.NOT_FOUND,
+                detail="Cards not found",
+            )
+        card_info = cards_response.data[0]
+        nobles_available = deserialize_nobles(card_info.get("nobles"))
         closed_cards = None
         open_cards = None
         if not bought_card:
-            cards_response = (
-                await client.table("cards")
-                .select("open", "closed")
-                .eq("game_id", game_id)
-                .execute()
-            )
-            if not cards_response.data or not isinstance(cards_response.data, list):
-                raise InvalidDatabaseEntryError(
-                    status_code=httpx.codes.NOT_FOUND,
-                    detail="Cards not found",
-                )
-            card_info = cards_response.data[0]
             closed_cards = deserialize_cards_by_level(card_info["closed"])
             open_cards = deserialize_cards_by_level(card_info["open"])
 
@@ -593,14 +605,26 @@ class GamesService:
             for gem_color in GemColor
         }
         purchased_cards.append(bought_card)
+        nobles_available, newly_awarded_nobles = self._award_eligible_nobles(
+            nobles_available=nobles_available,
+            purchased_cards=purchased_cards,
+        )
+        player_nobles.extend(newly_awarded_nobles)
 
+        cards_update: dict[str, object] = {}
         if not is_reserved_card and closed_cards is not None and open_cards is not None:
-            await client.table("cards").update(
+            cards_update.update(
                 {
                     "closed": serialize_cards_by_level(closed_cards),
                     "open": serialize_cards_by_level(open_cards),
                 }
-            ).eq("game_id", game_id).execute()
+            )
+        if newly_awarded_nobles:
+            cards_update["nobles"] = serialize_nobles(nobles_available)
+        if cards_update:
+            await client.table("cards").update(cards_update).eq(
+                "game_id", game_id
+            ).execute()
         await client.table("gems").update(updated_gems_available).eq(
             "game_id", game_id
         ).execute()
@@ -613,6 +637,7 @@ class GamesService:
                     if card.id != card_uuid
                 ],
                 "purchased": [card.model_dump(mode="json") for card in purchased_cards],
+                "nobles": serialize_nobles(player_nobles),
             }
         ).eq("game_id", game_id).eq("id", player_id).execute()
         await self._complete_turn(game_id=game_id, player_id=player_id)
@@ -734,7 +759,7 @@ class GamesService:
         if game_info.get("endgame_started_by_player_id") is None:
             players_response = (
                 await client.table("players")
-                .select("id", "purchased")
+                .select("id", "purchased", "nobles")
                 .eq("game_id", game_id)
                 .execute()
             )
@@ -762,7 +787,8 @@ class GamesService:
                 card if isinstance(card, Card) else Card.model_validate(card)
                 for card in (current_player.get("purchased") or [])
             ]
-            if self._calculate_player_points(purchased_cards) >= 15:
+            player_nobles = deserialize_nobles(current_player.get("nobles"))
+            if self._calculate_player_points(purchased_cards, player_nobles) >= 15:
                 update_payload.update(
                     {
                         "endgame_started_by_player_id": player_id,
@@ -772,8 +798,40 @@ class GamesService:
 
         await client.table("games").update(update_payload).eq("id", game_id).execute()
 
-    def _calculate_player_points(self, purchased_cards: list[Card]) -> int:
-        return sum(card.points for card in purchased_cards)
+    def _award_eligible_nobles(
+        self,
+        nobles_available: list[Noble],
+        purchased_cards: list[Card],
+    ) -> tuple[list[Noble], list[Noble]]:
+        permanent_counts = self._calculate_permanent_card_counts(purchased_cards)
+        awarded_nobles: list[Noble] = []
+        remaining_nobles: list[Noble] = []
+
+        for noble in nobles_available:
+            if all(
+                permanent_counts[gem_color] >= getattr(noble, gem_color.value)
+                for gem_color in TAKEABLE_GEM_COLORS
+            ):
+                awarded_nobles.append(noble)
+            else:
+                remaining_nobles.append(noble)
+
+        return remaining_nobles, awarded_nobles
+
+    def _calculate_permanent_card_counts(
+        self, purchased_cards: list[Card]
+    ) -> dict[GemColor, int]:
+        permanent_counts = {gem_color: 0 for gem_color in TAKEABLE_GEM_COLORS}
+        for card in purchased_cards:
+            permanent_counts[card.color] += 1
+        return permanent_counts
+
+    def _calculate_player_points(
+        self, purchased_cards: list[Card], nobles_owned: list[Noble]
+    ) -> int:
+        return sum(card.points for card in purchased_cards) + sum(
+            noble.points for noble in nobles_owned
+        )
 
     def _build_endgame_state(
         self,
@@ -782,6 +840,7 @@ class GamesService:
         endgame_started_on_turn: int | None,
         order: dict[str, int],
         purchased: dict[str, list[Card]],
+        nobles_owned: dict[str, list[Noble]],
     ) -> GameEndState:
         final_turn = self._calculate_final_turn(
             endgame_started_on_turn=endgame_started_on_turn,
@@ -805,6 +864,7 @@ class GamesService:
                 endgame_started_by_player_id=endgame_started_by_player_id,
                 order=order,
                 purchased=purchased,
+                nobles_owned=nobles_owned,
             ),
         )
 
@@ -822,6 +882,7 @@ class GamesService:
         endgame_started_by_player_id: str,
         order: dict[str, int],
         purchased: dict[str, list[Card]],
+        nobles_owned: dict[str, list[Noble]],
     ) -> str | None:
         if not order:
             return None
@@ -832,7 +893,7 @@ class GamesService:
             return max(
                 order.keys(),
                 key=lambda player_id: self._calculate_player_points(
-                    purchased.get(player_id, [])
+                    purchased.get(player_id, []), nobles_owned.get(player_id, [])
                 ),
             )
 
@@ -842,7 +903,9 @@ class GamesService:
         return max(
             order.keys(),
             key=lambda player_id: (
-                self._calculate_player_points(purchased.get(player_id, [])),
+                self._calculate_player_points(
+                    purchased.get(player_id, []), nobles_owned.get(player_id, [])
+                ),
                 final_turn_offset(player_id),
             ),
         )
@@ -982,6 +1045,7 @@ class GamesService:
                     "gold": 0,
                     "reserved": [],
                     "purchased": [],
+                    "nobles": [],
                 }
                 for idx, player_id in enumerate(sorted_all_player_ids)
             ]
@@ -1001,11 +1065,13 @@ class GamesService:
         ).execute()
 
         closed_cards, open_cards = instantiate_game_cards()
+        nobles_available = instantiate_game_nobles(len(sorted_all_player_ids))
         await client.table("cards").upsert(
             {
                 "game_id": game_id,
                 "closed": serialize_cards_by_level(closed_cards),
                 "open": serialize_cards_by_level(open_cards),
+                "nobles": serialize_nobles(nobles_available),
             }
         ).execute()
         await client.table("games").update(

@@ -35,4 +35,21 @@ class Card(BaseModel):
     )  # Keep this field to streamline the datastructure
 
 
+class Noble(BaseModel):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, description="Unique noble identifier."
+    )
+    points: int = Field(
+        description="The prestige points awarded by the noble.", default=3
+    )
+    black: int = Field(description="Black card requirement.")
+    blue: int = Field(description="Blue card requirement.")
+    green: int = Field(description="Green card requirement.")
+    red: int = Field(description="Red card requirement.")
+    white: int = Field(description="White card requirement.")
+    gold: int = Field(
+        description="Gold requirement placeholder.", default=0
+    )  # Keep this field to streamline the datastructure
+
+
 PLAYER_COUNT_TO_GEM_STACK_SIZE: dict[int, int] = {2: 4, 3: 5, 4: 7}

@@ -12,6 +12,7 @@ import CardActionMenu from '@/components/game/card-action-menu';
 import CardRow from '@/components/game/card-row';
 import GameOverScreen from '@/components/game/game-over-screen';
 import GemBank from '@/components/game/gem-bank';
+import NobleTile from '@/components/game/noble-tile';
 import PlayerBar from '@/components/game/player-bar';
 import ReservedCardsDrawer from '@/components/game/reserved-cards-drawer';
 import GemChip from '@/components/shared/game/gem-chip';
@@ -50,6 +51,23 @@ const EMPTY_GEM_COUNTS: GemCounts = {
   white: 0,
   gold: 0,
 };
+
+const NOBLE_IMAGE_PATHS = [
+  '/nobles/1.png',
+  '/nobles/2.png',
+  '/nobles/3.png',
+  '/nobles/4.png',
+  '/nobles/5.png',
+] as const;
+
+function getShuffledNobleImagePaths() {
+  const imagePaths = [...NOBLE_IMAGE_PATHS];
+  for (let index = imagePaths.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [imagePaths[index], imagePaths[swapIndex]] = [imagePaths[swapIndex], imagePaths[index]];
+  }
+  return imagePaths;
+}
 
 function getSelectedTotal(selectedGems: GemCounts) {
   return Object.values(selectedGems).reduce((total, count) => total + count, 0);
@@ -148,6 +166,7 @@ export default function GameBoard({
   const endgameTriggerNickname = gameData.endgame.triggered_by_player_id
     ? gameData.nicknames[gameData.endgame.triggered_by_player_id]
     : null;
+  const nobleIds = gameData.nobles_available.map((noble) => noble.id).join('|');
 
   const selectedGemEntries = useMemo(
     () =>
@@ -167,6 +186,11 @@ export default function GameBoard({
     [selectedDiscards],
   );
   const selectedDiscardTotal = getSelectedTotal(selectedDiscards);
+  const nobleImageById = useMemo(() => {
+    const ids = nobleIds ? nobleIds.split('|') : [];
+    const imagePaths = getShuffledNobleImagePaths();
+    return new Map(ids.map((id, index) => [id, imagePaths[index]]));
+  }, [nobleIds]);
 
   const currentPlayerPermanentColors = useMemo(() => {
     const purchasedCards = currentPlayerId ? (gameData.purchased[currentPlayerId] ?? []) : [];
@@ -464,6 +488,17 @@ export default function GameBoard({
           />
         }
       />
+      {gameData.nobles_available.length > 0 ? (
+        <section className="splendor-noble-court" aria-label="Nobles in play">
+          {gameData.nobles_available.map((noble) => (
+            <NobleTile
+              key={noble.id}
+              noble={noble}
+              imagePath={nobleImageById.get(noble.id) ?? NOBLE_IMAGE_PATHS[0]}
+            />
+          ))}
+        </section>
+      ) : null}
       <div className="flex flex-row justify-center gap-4">
         <GemBank
           gemsAvailable={gameData.gems_available}

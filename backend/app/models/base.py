@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from app.models.games import Card, CardLevel, GemColor
+from app.models.games import Card, CardLevel, GemColor, Noble
 
 MAX_PLAYER_GEMS = 10
 
@@ -69,6 +69,8 @@ class FetchGameDataResponse(BaseModel):
     nicknames: dict[str, str]
     gems_available: dict[GemColor, int]
     gems_owned: dict[str, dict[GemColor, int]]
+    nobles_available: list[Noble]
+    nobles_owned: dict[str, list[Noble]]
     reserved: dict[str, list[Card]]
     purchased: dict[str, list[Card]]
     closed: dict[CardLevel, list[Card]]

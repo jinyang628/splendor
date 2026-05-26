@@ -93,3 +93,17 @@ SPLENDOR_CARDS: list[tuple[CardLevel, GemColor, int, int, int, int, int, int]] =
     (CardLevel.THREE, GemColor.RED, 4, 0, 3, 6, 3, 0),
     (CardLevel.THREE, GemColor.RED, 5, 0, 0, 7, 3, 0),
 ]
+
+# PV, Black, Blue, Green, Red, White (Splendor base game)
+SPLENDOR_NOBLES: list[tuple[int, int, int, int, int, int]] = [
+    (3, 0, 3, 3, 0, 3),
+    (3, 0, 3, 3, 3, 0),
+    (3, 3, 0, 0, 3, 3),
+    (3, 3, 3, 0, 0, 3),
+    (3, 3, 0, 3, 3, 0),
+    (3, 4, 0, 0, 4, 0),
+    (3, 4, 0, 0, 0, 4),
+    (3, 0, 0, 4, 4, 0),
+    (3, 0, 4, 0, 0, 4),
+    (3, 0, 4, 4, 0, 0),
+]

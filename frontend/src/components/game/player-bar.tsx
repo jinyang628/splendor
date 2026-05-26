@@ -32,7 +32,16 @@ export default function PlayerBar({
   return (
     <ul className="splendor-player-bar" aria-label="Players in turn order">
       {players.map(
-        ({ playerId, position, nickname, points, gemsOwned, reservedCards, purchasedCards }) => {
+        ({
+          playerId,
+          position,
+          nickname,
+          points,
+          gemsOwned,
+          noblesOwned,
+          reservedCards,
+          purchasedCards,
+        }) => {
           const isCurrentUser = playerId === currentPlayerId;
           const isCurrentTurn = playerId === currentTurnPlayerId;
           const getPermanentCount = (color: CardColor) =>
@@ -53,6 +62,11 @@ export default function PlayerBar({
                 <span className="splendor-player-seat__points">
                   {points} {points === 1 ? 'point' : 'points'}
                 </span>
+                {noblesOwned.length > 0 ? (
+                  <span className="splendor-player-seat__nobles">
+                    {noblesOwned.length} {noblesOwned.length === 1 ? 'noble' : 'nobles'}
+                  </span>
+                ) : null}
                 {isCurrentUser ? <span className="splendor-player-seat__badge">You</span> : null}
                 <div
                   className="splendor-player-seat__resources"

@@ -775,6 +775,11 @@
     font-family: var(--font-display);
   }
 
+  .splendor-player-seat__nobles {
+    @apply border-splendor-gold/25 bg-splendor-gold/10 text-splendor-gold rounded-sm border px-1.5 py-0.5 text-[0.62rem] font-semibold tracking-[0.14em] uppercase;
+    font-family: var(--font-display);
+  }
+
   .splendor-player-seat__badge {
     @apply bg-splendor-gold/20 text-splendor-gold rounded-full px-2 py-0.5 text-[0.6rem] font-semibold tracking-[0.2em] uppercase;
     font-family: var(--font-display);
@@ -843,6 +848,41 @@
 
   .splendor-player-seat__reserved-action [data-slot='button'] {
     @apply w-full justify-center gap-2;
+  }
+
+  .splendor-noble-court {
+    @apply flex flex-wrap justify-center gap-3;
+  }
+
+  .splendor-noble-tile {
+    @apply border-border/70 bg-card relative flex h-36 w-24 shrink-0 flex-col overflow-hidden rounded-xl border-2 px-2 py-2 shadow-md ring-1 ring-black/5;
+    background-image: linear-gradient(
+      150deg,
+      color-mix(in oklch, var(--splendor-gold) 18%, var(--card)) 0%,
+      var(--card) 48%,
+      color-mix(in oklch, var(--splendor-velvet-deep) 28%, var(--card)) 100%
+    );
+  }
+
+  .splendor-noble-tile__points {
+    @apply bg-splendor-points/15 text-splendor-points ring-splendor-points/25 absolute top-2 left-2 z-10 inline-flex size-7 items-center justify-center rounded-full text-base font-bold tabular-nums ring-1;
+    font-family: var(--font-display);
+  }
+
+  .splendor-noble-tile__portrait {
+    @apply border-border/50 bg-muted/50 mx-auto mt-2 flex size-16 items-center justify-center overflow-hidden rounded-full border shadow-inner;
+  }
+
+  .splendor-noble-tile__portrait img {
+    @apply h-full w-full object-cover;
+  }
+
+  .splendor-noble-tile__requirements {
+    @apply mt-auto flex min-h-12 flex-wrap content-end justify-center gap-1.5;
+  }
+
+  .splendor-noble-tile__requirements .gem-chip {
+    @apply size-6 text-[10px];
   }
 
   .splendor-card-board {

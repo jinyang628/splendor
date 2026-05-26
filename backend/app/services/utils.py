@@ -1,9 +1,9 @@
 import random
 import uuid
 
-from app.models.games import Card, CardLevel
+from app.models.games import Card, CardLevel, Noble
 from app.utils.errors import InvalidGameLogicError
-from app.utils.games import SPLENDOR_CARDS
+from app.utils.games import SPLENDOR_CARDS, SPLENDOR_NOBLES
 
 
 def instantiate_game_cards() -> (
@@ -42,6 +42,23 @@ def instantiate_game_cards() -> (
     return closed_cards, open_cards
 
 
+def instantiate_game_nobles(player_count: int) -> list[Noble]:
+    noble_count = player_count + 1
+    selected_requirements = random.sample(SPLENDOR_NOBLES, k=noble_count)
+
+    return [
+        Noble(
+            points=points,
+            black=black,
+            blue=blue,
+            green=green,
+            red=red,
+            white=white,
+        )
+        for points, black, blue, green, red, white in selected_requirements
+    ]
+
+
 def serialize_cards_by_level(
     cards_by_level: dict[CardLevel, list[Card | None]],
 ) -> dict[str, list[dict | None]]:
@@ -67,6 +84,17 @@ def deserialize_cards_by_level(
         ]
         for level, cards in cards_by_level.items()
     }
+
+
+def serialize_nobles(nobles: list[Noble]) -> list[dict]:
+    return [noble.model_dump(mode="json") for noble in nobles]
+
+
+def deserialize_nobles(nobles: list[dict | Noble] | None) -> list[Noble]:
+    return [
+        noble if isinstance(noble, Noble) else Noble.model_validate(noble)
+        for noble in (nobles or [])
+    ]
 
 
 def reserve_closed_card(

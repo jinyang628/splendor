@@ -65,6 +65,13 @@ export const gameCardSchema = gemCountsSchema.extend({
 
 export type GameCard = z.infer<typeof gameCardSchema>;
 
+export const gameNobleSchema = gemCountsSchema.extend({
+  id: z.string().uuid(),
+  points: z.number().int().min(0),
+});
+
+export type GameNoble = z.infer<typeof gameNobleSchema>;
+
 export const gameEndStateSchema = z.object({
   status: z.enum(['playing', 'final_turns', 'completed']),
   triggered_by_player_id: z.string().nullable(),
@@ -87,6 +94,8 @@ export const fetchGameDataResponseSchema = z.object({
   nicknames: z.record(z.string(), z.string()),
   gems_available: gemCountsSchema,
   gems_owned: z.record(z.string(), gemCountsSchema),
+  nobles_available: z.array(gameNobleSchema),
+  nobles_owned: z.record(z.string(), z.array(gameNobleSchema)),
   reserved: z.record(z.string(), z.array(gameCardSchema)),
   purchased: z.record(z.string(), z.array(gameCardSchema)),
   closed: cardsByLevelSchema,
