@@ -32,7 +32,6 @@ export default function JoinRoomGroup() {
     } catch (error) {
       toast.error('Unexpected error while trying to join room. Please try again later.');
       console.error(error);
-    } finally {
       setIsLoading(false);
     }
   };
