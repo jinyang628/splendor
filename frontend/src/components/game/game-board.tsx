@@ -499,7 +499,7 @@ export default function GameBoard({
           ))}
         </section>
       ) : null}
-      <div className="flex flex-row justify-center gap-4">
+      <div className="splendor-gem-controls">
         <GemBank
           gemsAvailable={gameData.gems_available}
           selectedGems={selectedGems}

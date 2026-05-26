@@ -654,11 +654,15 @@
   }
 
   .splendor-game-board {
-    @apply flex w-full flex-col gap-8;
+    @apply flex w-full min-w-0 flex-col gap-8;
   }
 
   .splendor-gem-bank {
     @apply flex flex-wrap items-center justify-center gap-3;
+  }
+
+  .splendor-gem-controls {
+    @apply flex min-w-0 flex-col items-center justify-center gap-4 lg:flex-row lg:items-start;
   }
 
   .splendor-turn-status {
@@ -687,11 +691,11 @@
   }
 
   .splendor-gem-selection {
-    @apply border-border/60 bg-card/80 flex w-full flex-none flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
+    @apply border-border/60 bg-card/80 flex w-full min-w-0 flex-none flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
   }
 
   .splendor-gem-selection--take {
-    @apply h-[4.5rem] max-w-full flex-row items-center justify-between gap-4 sm:w-[24rem];
+    @apply max-w-full flex-col justify-between gap-4 sm:w-[24rem] sm:flex-row sm:items-center;
   }
 
   .splendor-gem-selection--discard {
@@ -712,7 +716,7 @@
   }
 
   .splendor-gem-selection--take .splendor-gem-selection__chips {
-    @apply grid w-[7.5rem] grid-cols-3 items-center gap-2;
+    @apply grid w-full min-w-28 grid-cols-3 items-center gap-2 sm:w-[7.5rem];
   }
 
   .splendor-gem-selection__chip {
@@ -736,11 +740,16 @@
   }
 
   .splendor-player-bar {
-    @apply flex flex-wrap items-stretch justify-center gap-3;
+    @apply grid w-full items-stretch gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.25rem), 1fr));
+  }
+
+  .splendor-player-bar > li {
+    @apply flex min-w-0;
   }
 
   .splendor-player-seat {
-    @apply border-border/70 bg-card relative flex min-w-[7.5rem] flex-col items-center gap-1 rounded-xl border-2 px-4 py-3 shadow-md ring-1 ring-black/5;
+    @apply border-border/70 bg-card relative flex w-full min-w-0 flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 shadow-md ring-1 ring-black/5;
     background-image: linear-gradient(
       165deg,
       color-mix(in oklch, var(--card) 92%, white) 0%,
@@ -766,7 +775,7 @@
   }
 
   .splendor-player-seat__name {
-    @apply text-center text-sm font-semibold tracking-wide;
+    @apply max-w-full truncate text-center text-sm font-semibold tracking-wide;
     font-family: var(--font-display);
   }
 
@@ -786,11 +795,11 @@
   }
 
   .splendor-player-seat__resources {
-    @apply mt-2 grid grid-cols-6 gap-x-1.5 gap-y-1;
+    @apply mt-2 grid w-full grid-cols-6 gap-x-1 gap-y-1;
   }
 
   .splendor-player-seat__resource-column {
-    @apply grid justify-items-center gap-1;
+    @apply grid min-w-0 justify-items-center gap-1;
     grid-template-rows: 1.35rem 1.25rem;
   }
 
@@ -851,7 +860,8 @@
   }
 
   .splendor-noble-court {
-    @apply flex flex-wrap justify-center gap-3;
+    @apply grid w-full justify-center gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(5.5rem, 6rem));
   }
 
   .splendor-noble-tile {
@@ -886,11 +896,12 @@
   }
 
   .splendor-card-board {
-    @apply flex flex-col gap-4;
+    @apply flex min-w-0 flex-col gap-4 overflow-x-auto overflow-y-visible pb-2;
+    scrollbar-width: thin;
   }
 
   .splendor-card-row {
-    @apply flex flex-wrap items-center justify-center gap-3 sm:gap-4;
+    @apply flex w-max min-w-full flex-nowrap items-center justify-start gap-3 px-1 sm:justify-center sm:gap-4;
   }
 
   .splendor-card-row__cell {
@@ -1011,7 +1022,7 @@
   }
 
   .splendor-game-panel {
-    @apply w-full max-w-4xl rounded-[1.75rem] border p-6 shadow-xl sm:p-8;
+    @apply w-full max-w-4xl min-w-0 rounded-2xl border p-3 shadow-xl sm:rounded-[1.75rem] sm:p-6 lg:p-8;
     border-color: color-mix(in oklch, var(--splendor-gold) 30%, var(--border));
     background: linear-gradient(
       168deg,
