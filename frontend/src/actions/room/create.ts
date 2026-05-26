@@ -12,7 +12,7 @@ export async function createRoom(gameId: string, playerId: string): Promise<Room
       player_id: playerId,
     });
     console.log('Creating room:', request);
-
+    console.log('Server base URL:', process.env.SERVER_BASE_URL);
     const response = await axios.post<RoomResponse>(
       `${process.env.SERVER_BASE_URL}/api/v1/rooms/create`,
       request,
