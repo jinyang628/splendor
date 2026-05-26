@@ -666,6 +666,10 @@
     font-family: var(--font-display);
   }
 
+  .splendor-final-turn-status {
+    @apply border-splendor-gold/35 bg-splendor-gold/10 text-splendor-gold -mt-5 rounded-md border px-4 py-2 text-center text-sm font-semibold;
+  }
+
   .splendor-gem-bank__button {
     @apply focus-visible:ring-ring focus-visible:ring-offset-background relative rounded-full p-1 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0;
   }
@@ -763,6 +767,11 @@
 
   .splendor-player-seat__name {
     @apply text-center text-sm font-semibold tracking-wide;
+    font-family: var(--font-display);
+  }
+
+  .splendor-player-seat__points {
+    @apply text-splendor-gold text-xs font-bold tracking-[0.12em] uppercase;
     font-family: var(--font-display);
   }
 
@@ -982,6 +991,56 @@
       var(--splendor-velvet-deep) 50%,
       color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
     );
+  }
+
+  .splendor-game-over {
+    @apply flex min-h-[34rem] w-full flex-col items-center justify-center gap-8 text-center;
+  }
+
+  .splendor-game-over__icon {
+    @apply bg-splendor-gold/15 text-splendor-gold ring-splendor-gold/25 flex size-20 items-center justify-center rounded-full ring-1;
+  }
+
+  .splendor-game-over__icon svg {
+    @apply size-10;
+  }
+
+  .splendor-game-over__header {
+    @apply flex max-w-xl flex-col items-center gap-3;
+  }
+
+  .splendor-game-over__title {
+    @apply text-4xl font-bold sm:text-5xl;
+    font-family: var(--font-display);
+  }
+
+  .splendor-game-over__subtitle {
+    @apply text-muted-foreground text-base;
+  }
+
+  .splendor-game-over__standings {
+    @apply grid w-full max-w-md gap-2;
+  }
+
+  .splendor-game-over__standing {
+    @apply border-border/60 bg-card/75 grid grid-cols-[2rem_1fr_3rem] items-center gap-3 rounded-md border px-4 py-3 text-left shadow-sm;
+  }
+
+  .splendor-game-over__rank {
+    @apply bg-splendor-gold/15 text-splendor-gold ring-splendor-gold/20 flex size-8 items-center justify-center rounded-full text-sm font-bold tabular-nums ring-1;
+  }
+
+  .splendor-game-over__name {
+    @apply min-w-0 truncate text-sm font-semibold;
+  }
+
+  .splendor-game-over__score {
+    @apply text-splendor-gold text-right text-lg font-bold tabular-nums;
+    font-family: var(--font-display);
+  }
+
+  .splendor-game-over__button {
+    @apply min-w-40;
   }
 }
 

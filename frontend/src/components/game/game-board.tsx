@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import CardActionMenu from '@/components/game/card-action-menu';
 import CardRow from '@/components/game/card-row';
+import GameOverScreen from '@/components/game/game-over-screen';
 import GemBank from '@/components/game/gem-bank';
 import PlayerBar from '@/components/game/player-bar';
 import ReservedCardsDrawer from '@/components/game/reserved-cards-drawer';
@@ -139,6 +140,14 @@ export default function GameBoard({
   const currentPlayerGemTotal = getGemTotal(currentPlayerGems);
   const discardRequired = Math.max(0, currentPlayerGemTotal - 10);
   const mustDiscard = isCurrentUserTurn && discardRequired > 0;
+  const isFinalTurns = gameData.endgame.status === 'final_turns';
+  const finalTurnsRemaining =
+    gameData.endgame.final_turn === null
+      ? 0
+      : Math.max(0, gameData.endgame.final_turn - gameData.turn + 1);
+  const endgameTriggerNickname = gameData.endgame.triggered_by_player_id
+    ? gameData.nicknames[gameData.endgame.triggered_by_player_id]
+    : null;
 
   const selectedGemEntries = useMemo(
     () =>
@@ -212,6 +221,10 @@ export default function GameBoard({
       setActiveCardMenu(null);
     }
   }, [isCurrentUserTurn]);
+
+  if (gameData.endgame.status === 'completed') {
+    return <GameOverScreen gameData={gameData} currentPlayerId={currentPlayerId} />;
+  }
 
   const handleGemClick = (color: GemColor) => {
     if (
@@ -429,6 +442,12 @@ export default function GameBoard({
           ? 'Your turn'
           : `${gameData.nicknames[currentTurnPlayerId ?? ''] ?? 'Waiting'}'s turn`}
       </p>
+      {isFinalTurns ? (
+        <p className="splendor-final-turn-status">
+          Final turns: {finalTurnsRemaining} {finalTurnsRemaining === 1 ? 'turn' : 'turns'} left
+          {endgameTriggerNickname ? ` after ${endgameTriggerNickname} reached 15 points` : ''}
+        </p>
+      ) : null}
       <PlayerBar
         players={players}
         currentPlayerId={currentPlayerId}

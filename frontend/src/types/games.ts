@@ -65,6 +65,15 @@ export const gameCardSchema = gemCountsSchema.extend({
 
 export type GameCard = z.infer<typeof gameCardSchema>;
 
+export const gameEndStateSchema = z.object({
+  status: z.enum(['playing', 'final_turns', 'completed']),
+  triggered_by_player_id: z.string().nullable(),
+  final_turn: z.number().int().nullable(),
+  winner_player_id: z.string().nullable(),
+});
+
+export type GameEndState = z.infer<typeof gameEndStateSchema>;
+
 const cardsByLevelSchema = z.record(z.enum(['1', '2', '3']), z.array(gameCardSchema));
 const openCardsByLevelSchema = z.record(
   z.enum(['1', '2', '3']),
@@ -73,6 +82,7 @@ const openCardsByLevelSchema = z.record(
 
 export const fetchGameDataResponseSchema = z.object({
   turn: z.number().int(),
+  endgame: gameEndStateSchema,
   order: z.record(z.string(), z.number().int()),
   nicknames: z.record(z.string(), z.string()),
   gems_available: gemCountsSchema,

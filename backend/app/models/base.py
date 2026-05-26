@@ -35,6 +35,19 @@ class ReserveCardSource(StrEnum):
     CLOSED = "closed"
 
 
+class GameEndStatus(StrEnum):
+    PLAYING = "playing"
+    FINAL_TURNS = "final_turns"
+    COMPLETED = "completed"
+
+
+class GameEndState(BaseModel):
+    status: GameEndStatus
+    triggered_by_player_id: str | None = None
+    final_turn: int | None = None
+    winner_player_id: str | None = None
+
+
 class ReserveCardRequest(BaseModel):
     game_id: str
     player_id: str
@@ -51,6 +64,7 @@ class BuyCardRequest(BaseModel):
 
 class FetchGameDataResponse(BaseModel):
     turn: int
+    endgame: GameEndState
     order: dict[str, int]
     nicknames: dict[str, str]
     gems_available: dict[GemColor, int]

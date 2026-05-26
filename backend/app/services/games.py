@@ -3,7 +3,7 @@ import uuid
 import httpx
 
 from app.models.base import (MAX_PLAYER_GEMS, FetchGameDataResponse,
-                             ReserveCardSource)
+                             GameEndState, GameEndStatus, ReserveCardSource)
 from app.models.games import (PLAYER_COUNT_TO_GEM_STACK_SIZE, Card, CardLevel,
                               GemColor)
 from app.services.database import DatabaseService
@@ -28,7 +28,14 @@ class GamesService:
     async def fetch_game_data(self, game_id: str) -> FetchGameDataResponse:
         client = await DatabaseService().get_client()
         game_response = (
-            await client.table("games").select("turn").eq("id", game_id).execute()
+            await client.table("games")
+            .select(
+                "turn",
+                "endgame_started_by_player_id",
+                "endgame_started_on_turn",
+            )
+            .eq("id", game_id)
+            .execute()
         )
         if (
             not game_response.data
@@ -38,7 +45,8 @@ class GamesService:
             raise RoomNotFoundError(
                 status_code=httpx.codes.NOT_FOUND, detail="Game not found"
             )
-        turn = game_response.data[0]["turn"]
+        game_info = game_response.data[0]
+        turn = game_info["turn"]
 
         response = (
             await client.table("players")
@@ -137,6 +145,15 @@ class GamesService:
         open_cards = deserialize_cards_by_level(open_cards)
         return FetchGameDataResponse(
             turn=turn,
+            endgame=self._build_endgame_state(
+                turn=turn,
+                endgame_started_by_player_id=game_info.get(
+                    "endgame_started_by_player_id"
+                ),
+                endgame_started_on_turn=game_info.get("endgame_started_on_turn"),
+                order=order,
+                purchased=purchased,
+            ),
             order=order,
             nicknames=nicknames,
             gems_available=gems_available,
@@ -221,7 +238,7 @@ class GamesService:
         ).eq("id", player_id).execute()
 
         if sum(updated_player_gems.values()) <= MAX_PLAYER_GEMS:
-            await self._increment_turn(game_id=game_id)
+            await self._complete_turn(game_id=game_id, player_id=player_id)
 
         return await self.fetch_game_data(game_id=game_id)
 
@@ -318,7 +335,7 @@ class GamesService:
         await client.table("gems").update(updated_gems_available).eq(
             "game_id", game_id
         ).execute()
-        await self._increment_turn(game_id=game_id)
+        await self._complete_turn(game_id=game_id, player_id=player_id)
 
         return await self.fetch_game_data(game_id=game_id)
 
@@ -451,7 +468,7 @@ class GamesService:
         ).eq("game_id", game_id).eq("id", player_id).execute()
 
         if sum(updated_player_gems.values()) <= MAX_PLAYER_GEMS:
-            await self._increment_turn(game_id=game_id)
+            await self._complete_turn(game_id=game_id, player_id=player_id)
 
         return await self.fetch_game_data(game_id=game_id)
 
@@ -598,7 +615,7 @@ class GamesService:
                 "purchased": [card.model_dump(mode="json") for card in purchased_cards],
             }
         ).eq("game_id", game_id).eq("id", player_id).execute()
-        await self._increment_turn(game_id=game_id)
+        await self._complete_turn(game_id=game_id, player_id=player_id)
 
         return await self.fetch_game_data(game_id=game_id)
 
@@ -619,7 +636,10 @@ class GamesService:
             )
 
         game_response = (
-            await client.table("games").select("turn").eq("id", game_id).execute()
+            await client.table("games")
+            .select("turn", "endgame_started_on_turn")
+            .eq("id", game_id)
+            .execute()
         )
         if (
             not game_response.data
@@ -634,7 +654,18 @@ class GamesService:
         players_in_order = sorted(
             players_response.data, key=lambda player: player["order"]
         )
-        turn_index = (game_response.data[0]["turn"] - 1) % len(players_in_order)
+        game_info = game_response.data[0]
+        final_turn = self._calculate_final_turn(
+            endgame_started_on_turn=game_info.get("endgame_started_on_turn"),
+            player_count=len(players_in_order),
+        )
+        if final_turn is not None and game_info["turn"] > final_turn:
+            raise InvalidGameLogicError(
+                status_code=httpx.codes.FORBIDDEN,
+                detail="This game is over",
+            )
+
+        turn_index = (game_info["turn"] - 1) % len(players_in_order)
         current_turn_player = players_in_order[turn_index]
         if (
             player_id != current_turn_player["id"]
@@ -675,10 +706,17 @@ class GamesService:
         payment[GemColor.GOLD] = gold_needed
         return payment
 
-    async def _increment_turn(self, game_id: str) -> None:
+    async def _complete_turn(self, game_id: str, player_id: str) -> None:
         client = await DatabaseService().get_client()
         game_response = (
-            await client.table("games").select("turn").eq("id", game_id).execute()
+            await client.table("games")
+            .select(
+                "turn",
+                "endgame_started_by_player_id",
+                "endgame_started_on_turn",
+            )
+            .eq("id", game_id)
+            .execute()
         )
         if (
             not game_response.data
@@ -689,9 +727,125 @@ class GamesService:
                 status_code=httpx.codes.NOT_FOUND,
                 detail="Game not found",
             )
-        await client.table("games").update(
-            {"turn": game_response.data[0]["turn"] + 1}
-        ).eq("id", game_id).execute()
+        game_info = game_response.data[0]
+        current_turn = game_info["turn"]
+        update_payload = {"turn": current_turn + 1}
+
+        if game_info.get("endgame_started_by_player_id") is None:
+            players_response = (
+                await client.table("players")
+                .select("id", "purchased")
+                .eq("game_id", game_id)
+                .execute()
+            )
+            if not players_response.data or not isinstance(players_response.data, list):
+                raise InvalidDatabaseEntryError(
+                    status_code=httpx.codes.NOT_FOUND,
+                    detail="Players not found",
+                )
+
+            current_player = next(
+                (
+                    player
+                    for player in players_response.data
+                    if player["id"] == player_id
+                ),
+                None,
+            )
+            if current_player is None:
+                raise InvalidDatabaseEntryError(
+                    status_code=httpx.codes.NOT_FOUND,
+                    detail="Player not found",
+                )
+
+            purchased_cards = [
+                card if isinstance(card, Card) else Card.model_validate(card)
+                for card in (current_player.get("purchased") or [])
+            ]
+            if self._calculate_player_points(purchased_cards) >= 15:
+                update_payload.update(
+                    {
+                        "endgame_started_by_player_id": player_id,
+                        "endgame_started_on_turn": current_turn,
+                    }
+                )
+
+        await client.table("games").update(update_payload).eq("id", game_id).execute()
+
+    def _calculate_player_points(self, purchased_cards: list[Card]) -> int:
+        return sum(card.points for card in purchased_cards)
+
+    def _build_endgame_state(
+        self,
+        turn: int,
+        endgame_started_by_player_id: str | None,
+        endgame_started_on_turn: int | None,
+        order: dict[str, int],
+        purchased: dict[str, list[Card]],
+    ) -> GameEndState:
+        final_turn = self._calculate_final_turn(
+            endgame_started_on_turn=endgame_started_on_turn,
+            player_count=len(order),
+        )
+        if endgame_started_by_player_id is None or final_turn is None:
+            return GameEndState(status=GameEndStatus.PLAYING)
+
+        if turn <= final_turn:
+            return GameEndState(
+                status=GameEndStatus.FINAL_TURNS,
+                triggered_by_player_id=endgame_started_by_player_id,
+                final_turn=final_turn,
+            )
+
+        return GameEndState(
+            status=GameEndStatus.COMPLETED,
+            triggered_by_player_id=endgame_started_by_player_id,
+            final_turn=final_turn,
+            winner_player_id=self._determine_winner(
+                endgame_started_by_player_id=endgame_started_by_player_id,
+                order=order,
+                purchased=purchased,
+            ),
+        )
+
+    def _calculate_final_turn(
+        self,
+        endgame_started_on_turn: int | None,
+        player_count: int,
+    ) -> int | None:
+        if endgame_started_on_turn is None or player_count < 1:
+            return None
+        return endgame_started_on_turn + player_count - 1
+
+    def _determine_winner(
+        self,
+        endgame_started_by_player_id: str,
+        order: dict[str, int],
+        purchased: dict[str, list[Card]],
+    ) -> str | None:
+        if not order:
+            return None
+
+        player_count = len(order)
+        trigger_position = order.get(endgame_started_by_player_id)
+        if trigger_position is None:
+            return max(
+                order.keys(),
+                key=lambda player_id: self._calculate_player_points(
+                    purchased.get(player_id, [])
+                ),
+            )
+
+        def final_turn_offset(player_id: str) -> int:
+            return (order[player_id] - trigger_position) % player_count
+
+        return max(
+            order.keys(),
+            key=lambda player_id: (
+                self._calculate_player_points(purchased.get(player_id, [])),
+                final_turn_offset(player_id),
+            ),
+        )
 
     def _normalize_gem_counts(
         self, gem_counts: dict[GemColor, int]
@@ -854,6 +1008,10 @@ class GamesService:
                 "open": serialize_cards_by_level(open_cards),
             }
         ).execute()
-        await client.table("games").update({"is_ready": True}).eq(
-            "id", game_id
-        ).execute()
+        await client.table("games").update(
+            {
+                "is_ready": True,
+                "endgame_started_by_player_id": None,
+                "endgame_started_on_turn": None,
+            }
+        ).eq("id", game_id).execute()

@@ -5,6 +5,7 @@ export type PlayerInOrder = {
   playerId: string;
   position: number;
   nickname: string;
+  points: number;
   gemsOwned: GemCounts;
   reservedCards: GameCard[];
   purchasedCards: GameCard[];
@@ -14,6 +15,10 @@ export type PlayerInOrder = {
 export const BOARD_LEVELS = ['3', '2', '1'] as const;
 export type BoardLevel = (typeof BOARD_LEVELS)[number];
 
+export function getPlayerPoints(cards: GameCard[]): number {
+  return cards.reduce((total, card) => total + card.points, 0);
+}
+
 export function getPlayersInOrder(data: FetchGameDataResponse): PlayerInOrder[] {
   return Object.entries(data.order)
     .sort(([, a], [, b]) => a - b)
@@ -21,6 +26,7 @@ export function getPlayersInOrder(data: FetchGameDataResponse): PlayerInOrder[] 
       playerId,
       position,
       nickname: data.nicknames[playerId],
+      points: getPlayerPoints(data.purchased[playerId] ?? []),
       gemsOwned: data.gems_owned[playerId],
       reservedCards: data.reserved[playerId] ?? [],
       purchasedCards: data.purchased[playerId] ?? [],
