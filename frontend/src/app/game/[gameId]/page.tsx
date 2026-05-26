@@ -3,16 +3,58 @@
 import { use, useEffect, useState } from 'react';
 
 import { fetchGameData } from '@/actions/games/fetchGameData';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import GameBoard from '@/components/game/game-board';
+import GemChip from '@/components/shared/game/gem-chip';
 
+import { CARD_COLORS } from '@/types/cards';
 import type { FetchGameDataResponse } from '@/types/games';
 
 import { getCurrentUserId, supabase } from '@/lib/supabase';
 
 type GamePageProps = { params: Promise<{ gameId: string }> };
+
+const LOADER_GEM_POSITIONS = [
+  'top-0 left-1/2 -translate-x-1/2',
+  'top-8 right-2',
+  'right-7 bottom-2',
+  'bottom-2 left-7',
+  'top-8 left-2',
+] as const;
+
+function GameLoadingScreen() {
+  return (
+    <main className="flex min-h-[70vh] w-full flex-1 items-center justify-center px-2 py-4 sm:px-4">
+      <section className="splendor-game-loader" aria-busy="true" aria-live="polite">
+        <div className="splendor-game-loader__halo" aria-hidden />
+
+        <div className="splendor-game-loader__emblem" aria-hidden>
+          <div className="splendor-game-loader__orbit">
+            {CARD_COLORS.map((color, index) => (
+              <span
+                key={color}
+                className={`splendor-game-loader__gem ${LOADER_GEM_POSITIONS[index]}`}
+              >
+                <GemChip color={color} prominent />
+              </span>
+            ))}
+          </div>
+          <div className="splendor-game-loader__core">
+            <span className="splendor-game-loader__spark" />
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-8 flex flex-col items-center gap-3">
+          <p className="splendor-eyebrow">Preparing the table</p>
+          <p className="splendor-game-loader__text">Shuffling nobles and polishing gems...</p>
+        </div>
+
+        <div className="splendor-game-loader__progress" aria-hidden />
+      </section>
+    </main>
+  );
+}
 
 export default function GamePage({ params }: GamePageProps) {
   const { gameId } = use(params);
@@ -78,11 +120,7 @@ export default function GamePage({ params }: GamePageProps) {
   }, [gameId]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] w-full items-center justify-center">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <GameLoadingScreen />;
   }
 
   if (!gameData) {

@@ -1035,6 +1035,104 @@
       0 24px 60px -24px color-mix(in oklch, var(--splendor-velvet-deep) 90%, black);
   }
 
+  .splendor-game-loader {
+    @apply relative isolate flex w-full max-w-xl flex-col items-center justify-center overflow-hidden rounded-2xl border px-8 py-10 text-center shadow-xl sm:rounded-[1.75rem] sm:px-12 sm:py-12;
+    border-color: color-mix(in oklch, var(--splendor-gold) 34%, var(--border));
+    background:
+      radial-gradient(
+        ellipse 80% 52% at 50% 0%,
+        color-mix(in oklch, var(--splendor-gold) 18%, transparent),
+        transparent 62%
+      ),
+      linear-gradient(
+        168deg,
+        color-mix(in oklch, var(--splendor-velvet) 96%, white) 0%,
+        var(--splendor-velvet-deep) 58%,
+        color-mix(in oklch, var(--splendor-velvet-deep) 92%, black) 100%
+      );
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--splendor-gold) 18%, transparent),
+      0 24px 60px -24px color-mix(in oklch, var(--splendor-velvet-deep) 90%, black);
+  }
+
+  .splendor-game-loader__halo {
+    @apply pointer-events-none absolute -top-24 left-1/2 size-64 -translate-x-1/2 rounded-full blur-3xl;
+    animation: splendor-glow 4.5s ease-in-out infinite;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--splendor-gold) 42%, transparent),
+      transparent 68%
+    );
+  }
+
+  .splendor-game-loader__emblem {
+    @apply relative z-10 size-36;
+  }
+
+  .splendor-game-loader__orbit {
+    @apply absolute inset-0 rounded-full border border-dashed;
+    animation: gem-orbit 8s linear infinite;
+    border-color: color-mix(in oklch, var(--splendor-gold) 38%, transparent);
+  }
+
+  .splendor-game-loader__gem {
+    @apply absolute flex size-10 items-center justify-center;
+  }
+
+  .splendor-game-loader__gem .gem-chip {
+    @apply size-8 text-xs;
+    animation: gem-orbit 8s linear infinite reverse;
+    box-shadow: 0 8px 22px -10px color-mix(in oklch, var(--foreground) 75%, transparent);
+  }
+
+  .splendor-game-loader__core {
+    @apply absolute inset-9 flex items-center justify-center rounded-full border shadow-inner;
+    border-color: color-mix(in oklch, var(--splendor-gold) 35%, var(--border));
+    background:
+      linear-gradient(
+        45deg,
+        transparent 44%,
+        color-mix(in oklch, white 18%, transparent) 45% 55%,
+        transparent 56%
+      ),
+      linear-gradient(
+        -45deg,
+        transparent 44%,
+        color-mix(in oklch, white 16%, transparent) 45% 55%,
+        transparent 56%
+      ),
+      color-mix(in oklch, var(--splendor-gold) 16%, var(--card));
+  }
+
+  .splendor-game-loader__spark {
+    @apply bg-splendor-gold block size-7 rotate-45 rounded-sm;
+    animation: splendor-loader-spark 1.6s ease-in-out infinite;
+    box-shadow:
+      0 0 18px color-mix(in oklch, var(--splendor-gold) 55%, transparent),
+      inset 0 1px 0 color-mix(in oklch, white 55%, transparent);
+  }
+
+  .splendor-game-loader__text {
+    @apply text-muted-foreground max-w-64 text-sm leading-relaxed;
+  }
+
+  .splendor-game-loader__progress {
+    @apply relative z-10 mt-7 h-1 w-48 overflow-hidden rounded-full;
+    background: color-mix(in oklch, var(--splendor-gold) 18%, var(--border));
+  }
+
+  .splendor-game-loader__progress::after {
+    @apply absolute inset-y-0 left-0 w-1/2 rounded-full;
+    animation: splendor-loader-progress 1.5s ease-in-out infinite;
+    content: '';
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklch, var(--splendor-gold) 88%, white),
+      transparent
+    );
+  }
+
   .dark .splendor-game-panel {
     background: linear-gradient(
       168deg,
@@ -1042,6 +1140,21 @@
       var(--splendor-velvet-deep) 50%,
       color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
     );
+  }
+
+  .dark .splendor-game-loader {
+    background:
+      radial-gradient(
+        ellipse 80% 52% at 50% 0%,
+        color-mix(in oklch, var(--splendor-gold) 22%, transparent),
+        transparent 62%
+      ),
+      linear-gradient(
+        168deg,
+        color-mix(in oklch, var(--splendor-velvet) 95%, white) 0%,
+        var(--splendor-velvet-deep) 52%,
+        color-mix(in oklch, var(--splendor-velvet-deep) 88%, black) 100%
+      );
   }
 
   .splendor-game-over {
@@ -1154,5 +1267,26 @@
   100% {
     opacity: 0;
     transform: scale(1.2) rotate(12deg);
+  }
+}
+
+@keyframes splendor-loader-spark {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: rotate(45deg) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1.08);
+  }
+}
+
+@keyframes splendor-loader-progress {
+  0% {
+    transform: translateX(-115%);
+  }
+  100% {
+    transform: translateX(230%);
   }
 }
