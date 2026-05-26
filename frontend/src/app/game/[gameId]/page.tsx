@@ -115,7 +115,6 @@ export default function GamePage({ params }: GamePageProps) {
   return (
     <main className="flex w-full flex-1 items-start justify-center px-2 py-2 sm:px-4">
       <div className="splendor-game-panel">
-        <p className="splendor-eyebrow mb-6 text-center">The merchant&apos;s court</p>
         <GameBoard
           gameId={gameId}
           gameData={gameData}

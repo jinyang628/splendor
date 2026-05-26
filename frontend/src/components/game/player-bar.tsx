@@ -46,9 +46,6 @@ export default function PlayerBar({
               <span className="splendor-player-seat__order">{position}</span>
               <span className="splendor-player-seat__name">{nickname}</span>
               {isCurrentUser ? <span className="splendor-player-seat__badge">You</span> : null}
-              {isCurrentTurn ? (
-                <span className="splendor-player-seat__badge">Player Turn</span>
-              ) : null}
               <div
                 className="splendor-player-seat__resources"
                 aria-label={`${nickname}'s cards and gems`}

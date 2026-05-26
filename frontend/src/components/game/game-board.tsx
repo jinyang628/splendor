@@ -445,70 +445,72 @@ export default function GameBoard({
           onBuy={handleBuyCard}
         />
       </div>
-      <GemBank
-        gemsAvailable={gameData.gems_available}
-        selectedGems={selectedGems}
-        getGemDisabled={(color) =>
-          isTakingGems ||
-          isDiscardingGems ||
-          isReservingCard ||
-          isBuyingCard ||
-          mustDiscard ||
-          !currentPlayerId ||
-          !isCurrentUserTurn ||
-          !canAddGem(color, selectedGems, gameData.gems_available)
-        }
-        onGemClick={handleGemClick}
-      />
+      <div className="flex flex-row items-start gap-4">
+        <GemBank
+          gemsAvailable={gameData.gems_available}
+          selectedGems={selectedGems}
+          getGemDisabled={(color) =>
+            isTakingGems ||
+            isDiscardingGems ||
+            isReservingCard ||
+            isBuyingCard ||
+            mustDiscard ||
+            !currentPlayerId ||
+            !isCurrentUserTurn ||
+            !canAddGem(color, selectedGems, gameData.gems_available)
+          }
+          onGemClick={handleGemClick}
+        />
 
-      <section className="splendor-gem-selection" aria-label="Selected gems">
-        <div className="splendor-gem-selection__content">
-          <span className="splendor-gem-selection__label">Selected gems</span>
-          <div className="splendor-gem-selection__chips">
-            {selectedGemEntries.length > 0 ? (
-              selectedGemEntries.map(({ color, count }) => (
-                <button
-                  key={color}
-                  type="button"
-                  className="splendor-gem-selection__chip"
-                  aria-label={`Remove one selected ${color} gem`}
-                  onClick={() => handleRemoveSelectedGem(color)}
-                >
-                  <GemChip color={color} count={count} />
-                </button>
-              ))
-            ) : (
-              <span className="splendor-gem-selection__empty">No gems selected</span>
-            )}
+        <section className="splendor-gem-selection" aria-label="Selected gems">
+          <div className="splendor-gem-selection__content">
+            <span className="splendor-gem-selection__label">Selected gems</span>
+            <div className="splendor-gem-selection__chips">
+              {selectedGemEntries.length > 0 ? (
+                selectedGemEntries.map(({ color, count }) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="splendor-gem-selection__chip"
+                    aria-label={`Remove one selected ${color} gem`}
+                    onClick={() => handleRemoveSelectedGem(color)}
+                  >
+                    <GemChip color={color} count={count} />
+                  </button>
+                ))
+              ) : (
+                <span className="splendor-gem-selection__empty">No gems selected</span>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="splendor-gem-selection__actions">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={selectedTotal === 0 || isTakingGems || mustDiscard || !isCurrentUserTurn}
-            onClick={handleClearSelection}
-          >
-            Clear
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={
-              !currentPlayerId ||
-              !isCurrentUserTurn ||
-              selectedTotal === 0 ||
-              isTakingGems ||
-              isBuyingCard ||
-              mustDiscard
-            }
-            onClick={handleTakeGems}
-          >
-            Take
-          </Button>
-        </div>
-      </section>
+          <div className="splendor-gem-selection__actions">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={selectedTotal === 0 || isTakingGems || mustDiscard || !isCurrentUserTurn}
+              onClick={handleClearSelection}
+            >
+              Clear
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={
+                !currentPlayerId ||
+                !isCurrentUserTurn ||
+                selectedTotal === 0 ||
+                isTakingGems ||
+                isBuyingCard ||
+                mustDiscard
+              }
+              onClick={handleTakeGems}
+            >
+              Take
+            </Button>
+          </div>
+        </section>
+      </div>
 
       {mustDiscard ? (
         <section
