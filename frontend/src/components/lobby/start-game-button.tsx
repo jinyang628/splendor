@@ -23,11 +23,9 @@ export default function StartGameButton({ gameId }: StartGameButtonProps) {
     setIsLoading(true);
     try {
       await initialize(gameId);
-      toast.success('Game started');
     } catch (error) {
       toast.error('Failed to start game. Please try again.');
       console.error(error);
-    } finally {
       setIsLoading(false);
     }
   };
