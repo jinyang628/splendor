@@ -433,19 +433,19 @@ export default function GameBoard({
         players={players}
         currentPlayerId={currentPlayerId}
         currentTurnPlayerId={currentTurnPlayerId}
+        reservedCardsControl={
+          <ReservedCardsDrawer
+            reservedCards={currentPlayerReservedCards}
+            open={isReservedDrawerOpen}
+            onOpenChange={setIsReservedDrawerOpen}
+            canAfford={canAffordCard}
+            canBuyNow={canBuyCard}
+            isBusy={isBuyingCard}
+            onBuy={handleBuyCard}
+          />
+        }
       />
-      <div className="splendor-board-actions">
-        <ReservedCardsDrawer
-          reservedCards={currentPlayerReservedCards}
-          open={isReservedDrawerOpen}
-          onOpenChange={setIsReservedDrawerOpen}
-          canAfford={canAffordCard}
-          canBuyNow={canBuyCard}
-          isBusy={isBuyingCard}
-          onBuy={handleBuyCard}
-        />
-      </div>
-      <div className="flex flex-row items-start gap-4">
+      <div className="flex flex-row justify-center gap-4">
         <GemBank
           gemsAvailable={gameData.gems_available}
           selectedGems={selectedGems}
@@ -462,25 +462,26 @@ export default function GameBoard({
           onGemClick={handleGemClick}
         />
 
-        <section className="splendor-gem-selection" aria-label="Selected gems">
+        <section
+          className="splendor-gem-selection splendor-gem-selection--take"
+          aria-label="Selected gems"
+        >
           <div className="splendor-gem-selection__content">
             <span className="splendor-gem-selection__label">Selected gems</span>
             <div className="splendor-gem-selection__chips">
-              {selectedGemEntries.length > 0 ? (
-                selectedGemEntries.map(({ color, count }) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="splendor-gem-selection__chip"
-                    aria-label={`Remove one selected ${color} gem`}
-                    onClick={() => handleRemoveSelectedGem(color)}
-                  >
-                    <GemChip color={color} count={count} />
-                  </button>
-                ))
-              ) : (
-                <span className="splendor-gem-selection__empty">No gems selected</span>
-              )}
+              {selectedGemEntries.length > 0
+                ? selectedGemEntries.map(({ color, count }) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className="splendor-gem-selection__chip"
+                      aria-label={`Remove one selected ${color} gem`}
+                      onClick={() => handleRemoveSelectedGem(color)}
+                    >
+                      <GemChip color={color} count={count} />
+                    </button>
+                  ))
+                : null}
             </div>
           </div>
           <div className="splendor-gem-selection__actions">

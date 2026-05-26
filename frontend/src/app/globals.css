@@ -661,10 +661,6 @@
     @apply flex flex-wrap items-center justify-center gap-3;
   }
 
-  .splendor-board-actions {
-    @apply flex justify-center;
-  }
-
   .splendor-turn-status {
     @apply text-primary text-center text-sm font-semibold tracking-[0.18em] uppercase;
     font-family: var(--font-display);
@@ -687,7 +683,11 @@
   }
 
   .splendor-gem-selection {
-    @apply border-border/60 bg-card/80 flex flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
+    @apply border-border/60 bg-card/80 flex w-full flex-none flex-col gap-3 rounded-xl border px-4 py-3 shadow-md sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .splendor-gem-selection--take {
+    @apply h-[4.5rem] max-w-full flex-row items-center justify-between gap-4 sm:w-[24rem];
   }
 
   .splendor-gem-selection--discard {
@@ -707,6 +707,10 @@
     @apply flex min-h-8 flex-wrap items-center gap-2;
   }
 
+  .splendor-gem-selection--take .splendor-gem-selection__chips {
+    @apply grid w-[7.5rem] grid-cols-3 items-center gap-2;
+  }
+
   .splendor-gem-selection__chip {
     @apply focus-visible:ring-ring focus-visible:ring-offset-background rounded-full p-0.5 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0;
   }
@@ -717,6 +721,10 @@
 
   .splendor-gem-selection__empty {
     @apply text-muted-foreground text-sm;
+  }
+
+  .splendor-gem-selection--take .splendor-gem-selection__empty {
+    @apply col-span-3 text-xs whitespace-nowrap;
   }
 
   .splendor-gem-selection__actions {
@@ -818,6 +826,14 @@
 
   .splendor-player-seat__gem .gem-chip {
     @apply size-5 text-[10px];
+  }
+
+  .splendor-player-seat__reserved-action {
+    @apply border-border/55 mt-3 flex w-full justify-center border-t pt-3;
+  }
+
+  .splendor-player-seat__reserved-action [data-slot='button'] {
+    @apply w-full justify-center gap-2;
   }
 
   .splendor-card-board {

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import GemChip from '@/components/shared/game/gem-chip';
 
 import type { CardColor, GemColor } from '@/types/cards';
@@ -18,12 +20,14 @@ type PlayerBarProps = {
   players: PlayerInOrder[];
   currentPlayerId: string | null;
   currentTurnPlayerId: string | null;
+  reservedCardsControl?: ReactNode;
 };
 
 export default function PlayerBar({
   players,
   currentPlayerId,
   currentTurnPlayerId,
+  reservedCardsControl,
 }: PlayerBarProps) {
   return (
     <ul className="splendor-player-bar" aria-label="Players in turn order">
@@ -81,6 +85,9 @@ export default function PlayerBar({
                   );
                 })}
               </div>
+              {isCurrentUser && reservedCardsControl ? (
+                <div className="splendor-player-seat__reserved-action">{reservedCardsControl}</div>
+              ) : null}
             </div>
           </li>
         );
